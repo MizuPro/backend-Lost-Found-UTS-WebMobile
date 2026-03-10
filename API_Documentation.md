@@ -7,8 +7,8 @@ info:
     Autentikasi menggunakan JWT Bearer Token.
 
     **Role yang tersedia:**
-    - `petugas` — Admin/petugas yang mengelola barang temuan & pencocokan
-    - `pelapor` — Penumpang yang melaporkan kehilangan
+    - `petugas` - Admin/petugas yang mengelola barang temuan & pencocokan
+    - `pelapor` - Penumpang yang melaporkan kehilangan
   version: 1.0.0
   contact:
     name: CommuterLink Nusantara
@@ -23,15 +23,15 @@ tags:
   - name: Found Items
     description: |
       Manajemen barang temuan.
-      - **petugas** — dapat melakukan semua operasi (index, show, store, update, archive)
-      - **pelapor** — hanya dapat melihat daftar dan detail, **dengan field terbatas**: `id`, `nama_barang`, `waktu_temuan`, `status` saja (deskripsi, lokasi, foto disembunyikan untuk mencegah klaim palsu)
+      - **petugas** - dapat melakukan semua operasi (index, show, store, update, archive)
+      - **pelapor** - hanya dapat melihat daftar dan detail, **dengan field terbatas**: `id`, `nama_barang`, `waktu_temuan`, `status` saja (deskripsi, lokasi, foto disembunyikan untuk mencegah klaim palsu)
   - name: Lost Reports
     description: |
       Manajemen laporan kehilangan.
-      - **petugas** — dapat melakukan semua operasi (index, show, store, update, delete) pada semua laporan + melihat info pelapor lengkap
-      - **pelapor** — dapat membuat laporan, melihat & update hanya laporan **miliknya sendiri**, dan menutup laporan dengan status `ditutup`
+      - **petugas** - dapat melakukan semua operasi (index, show, store, update, delete) pada semua laporan + melihat info pelapor lengkap
+      - **pelapor** - dapat membuat laporan, melihat & update hanya laporan **miliknya sendiri**, dan menutup laporan dengan status `ditutup`
 
-# ── Security Schemes & Reusable Components ──────────────────────────────────
+# -- Security Schemes & Reusable Components ----------------------------------
 components:
   securitySchemes:
     BearerAuth:
@@ -153,7 +153,7 @@ components:
           example: "2026-03-10 08:35:00"
 
     FoundItemPublic:
-      description: Data terbatas untuk pelapor — hanya nama dan waktu ditemukan
+      description: Data terbatas untuk pelapor - hanya nama dan waktu ditemukan
       type: object
       properties:
         id:
@@ -172,7 +172,7 @@ components:
           example: tersimpan
 
     LostReport:
-      description: Data laporan kehilangan lengkap — untuk petugas
+      description: Data laporan kehilangan lengkap - untuk petugas
       type: object
       properties:
         id:
@@ -287,14 +287,14 @@ components:
             data: null
 
     ValidationError:
-      description: Input tidak valid — cek field yang bermasalah di dalam data
+      description: Input tidak valid - cek field yang bermasalah di dalam data
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorResponse'
 
     Conflict:
-      description: Konflik data — operasi tidak dapat dilakukan
+      description: Konflik data - operasi tidak dapat dilakukan
       content:
         application/json:
           schema:
@@ -304,14 +304,14 @@ components:
             message: Operasi tidak dapat dilakukan karena konflik data.
             data: null
 
-# ── Paths ────────────────────────────────────────────────────────────────────
+# -- Paths --------------------------------------------------------------------
 paths:
 
   # Health Check
   /:
     get:
       tags: [Auth]
-      summary: Health check — cek apakah server API berjalan
+      summary: Health check - cek apakah server API berjalan
       operationId: healthCheck
       responses:
         "200":
@@ -326,7 +326,7 @@ paths:
                   version: 1.0.0
                   status: running
 
-  # ── Register ────────────────────────────────────────────────────────────
+  # -- Register ------------------------------------------------------------
   /api/auth/register:
     post:
       tags: [Auth]
@@ -382,7 +382,7 @@ paths:
         "422":
           $ref: '#/components/responses/ValidationError'
 
-  # ── Login ───────────────────────────────────────────────────────────────
+  # -- Login ---------------------------------------------------------------
   /api/auth/login:
     post:
       tags: [Auth]
@@ -406,7 +406,7 @@ paths:
                   example: password123
       responses:
         "200":
-          description: Login berhasil — simpan token untuk request selanjutnya
+          description: Login berhasil - simpan token untuk request selanjutnya
           content:
             application/json:
               example:
@@ -433,7 +433,7 @@ paths:
         "422":
           $ref: '#/components/responses/ValidationError'
 
-  # ── Logout ──────────────────────────────────────────────────────────────
+  # -- Logout --------------------------------------------------------------
   /api/auth/logout:
     post:
       tags: [Auth]
@@ -457,7 +457,7 @@ paths:
         "401":
           $ref: '#/components/responses/Unauthorized'
 
-  # ── Me ──────────────────────────────────────────────────────────────────
+  # -- Me ------------------------------------------------------------------
   /api/auth/me:
     get:
       tags: [Auth]
@@ -485,7 +485,7 @@ paths:
         "404":
           $ref: '#/components/responses/NotFound'
 
-  # ── Update Profile ──────────────────────────────────────────────────────
+  # -- Update Profile ------------------------------------------------------
   /api/auth/profile:
     put:
       tags: [Auth]
@@ -536,7 +536,7 @@ paths:
         "422":
           $ref: '#/components/responses/ValidationError'
 
-  # ── Change Password ─────────────────────────────────────────────────────
+  # -- Change Password -----------------------------------------------------
   /api/auth/change-password:
     put:
       tags: [Auth]
@@ -563,7 +563,7 @@ paths:
                   example: newpassword456
       responses:
         "200":
-          description: Password berhasil diubah — client harus login ulang
+          description: Password berhasil diubah - client harus login ulang
           content:
             application/json:
               example:
@@ -581,12 +581,12 @@ paths:
         "422":
           $ref: '#/components/responses/ValidationError'
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # FOUND ITEMS — Barang Temuan
-  # ════════════════════════════════════════════════════════════════════════════
+  # ============================================================================
+  # FOUND ITEMS - Barang Temuan
+  # ============================================================================
 
   /api/found-items:
-    # ── GET /api/found-items ──────────────────────────────────────────────────
+    # -- GET /api/found-items --------------------------------------------------
     get:
       tags: [Found Items]
       summary: Ambil daftar semua barang temuan (Termasuk yang selesai)
@@ -594,13 +594,13 @@ paths:
         Mengambil semua daftar barang temuan tanpa kecuali (termasuk yang sudah berstatus `selesai`/diarsipkan).
 
         **Response berbeda berdasarkan role:**
-        - `petugas` — mendapat data lengkap: nama, deskripsi, lokasi, foto, catatan, petugas_name, dll
-        - `pelapor` — hanya mendapat: `id`, `nama_barang`, `waktu_temuan`, `status`
+        - `petugas` - mendapat data lengkap: nama, deskripsi, lokasi, foto, catatan, petugas_name, dll
+        - `pelapor` - hanya mendapat: `id`, `nama_barang`, `waktu_temuan`, `status`
 
         Filter via query parameter (semua opsional):
-        - `status` — filter berdasarkan status barang
-        - `lokasi` — pencarian parsial nama lokasi *(hanya berlaku untuk petugas)*
-        - `search` — pencarian parsial nama barang
+        - `status` - filter berdasarkan status barang
+        - `lokasi` - pencarian parsial nama lokasi *(hanya berlaku untuk petugas)*
+        - `search` - pencarian parsial nama barang
       operationId: foundItemIndex
       security:
         - BearerAuth: []
@@ -616,7 +616,7 @@ paths:
           name: lokasi
           schema:
             type: string
-          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+          description: Cari berdasarkan nama lokasi - hanya untuk petugas
           example: Manggarai
         - in: query
           name: search
@@ -678,7 +678,7 @@ paths:
                 data: null
 
   /api/found-items/selesai:
-    # ── GET /api/found-items/selesai ──────────────────────────────────────────
+    # -- GET /api/found-items/selesai ------------------------------------------
     get:
       tags: [Found Items]
       summary: Ambil daftar barang temuan yang SUDAH SELESAI
@@ -693,7 +693,7 @@ paths:
           name: lokasi
           schema:
             type: string
-          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+          description: Cari berdasarkan nama lokasi - hanya untuk petugas
         - in: query
           name: search
           schema:
@@ -712,7 +712,7 @@ paths:
                   total: 0
 
   /api/found-items/ongoing:
-    # ── GET /api/found-items/ongoing ──────────────────────────────────────────
+    # -- GET /api/found-items/ongoing ------------------------------------------
     get:
       tags: [Found Items]
       summary: Ambil daftar barang temuan yang MASIH PROSES (Ongoing)
@@ -727,7 +727,7 @@ paths:
           name: lokasi
           schema:
             type: string
-          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+          description: Cari berdasarkan nama lokasi - hanya untuk petugas
         - in: query
           name: search
           schema:
@@ -745,7 +745,7 @@ paths:
                   found_items: []
                   total: 0
 
-    # ── POST /api/found-items ─────────────────────────────────────────────────
+    # -- POST /api/found-items -------------------------------------------------
     post:
       tags: [Found Items]
       summary: Tambah barang temuan baru
@@ -753,8 +753,8 @@ paths:
         Hanya **petugas** yang dapat mengakses endpoint ini.
 
         Mendukung dua format request:
-        - `application/json` — tanpa foto
-        - `multipart/form-data` — dengan upload foto (field name: `foto`)
+        - `application/json` - tanpa foto
+        - `multipart/form-data` - dengan upload foto (field name: `foto`)
 
         **Aturan upload foto:**
         - Format: JPEG, PNG, WebP
@@ -839,14 +839,14 @@ paths:
           $ref: '#/components/responses/ValidationError'
 
   /api/found-items/{id}:
-    # ── GET /api/found-items/{id} ─────────────────────────────────────────────
+    # -- GET /api/found-items/{id} ---------------------------------------------
     get:
       tags: [Found Items]
       summary: Ambil detail satu barang temuan
       description: |
         **Response berbeda berdasarkan role:**
-        - `petugas` — data lengkap termasuk deskripsi, lokasi, foto, dan catatan
-        - `pelapor` — hanya `id`, `nama_barang`, `waktu_temuan`, `status`
+        - `petugas` - data lengkap termasuk deskripsi, lokasi, foto, dan catatan
+        - `pelapor` - hanya `id`, `nama_barang`, `waktu_temuan`, `status`
       operationId: foundItemShow
       security:
         - BearerAuth: []
@@ -907,7 +907,7 @@ paths:
                 message: Barang temuan tidak ditemukan.
                 data: null
 
-    # ── PUT /api/found-items/{id} ─────────────────────────────────────────────
+    # -- PUT /api/found-items/{id} ---------------------------------------------
     put:
       tags: [Found Items]
       summary: Update data barang temuan
@@ -915,8 +915,8 @@ paths:
         Hanya **petugas** yang dapat mengakses endpoint ini.
 
         Mendukung dua format request:
-        - `application/json` — tanpa ganti foto
-        - `multipart/form-data` — dengan ganti foto baru
+        - `application/json` - tanpa ganti foto
+        - `multipart/form-data` - dengan ganti foto baru
 
         Jika foto baru dikirim, foto lama akan otomatis dihapus dari server.
         Jika tidak dikirim foto baru, foto lama tetap dipertahankan.
@@ -957,7 +957,7 @@ paths:
                 status:
                   type: string
                   enum: [tersimpan, dicocokkan, diserahkan]
-                  description: Status selesai tidak dapat di-set manual — gunakan endpoint PATCH /archive
+                  description: Status selesai tidak dapat di-set manual - gunakan endpoint PATCH /archive
                   example: tersimpan
           multipart/form-data:
             schema:
@@ -993,7 +993,7 @@ paths:
                 status: success
                 message: Barang temuan berhasil diperbarui.
                 data:
-                    found_item:
+                  found_item:
                     id: 1
                     petugas_id: 1
                     petugas_name: Admin Petugas
@@ -1021,7 +1021,7 @@ paths:
         "422":
           $ref: '#/components/responses/ValidationError'
 
-    # ── PATCH /api/found-items/{id}/archive ───────────────────────────────────
+  # -- PATCH /api/found-items/{id}/archive -----------------------------------
   /api/found-items/{id}/archive:
     patch:
       tags: [Found Items]
@@ -1103,24 +1103,24 @@ paths:
                     message: Barang temuan tidak dapat diselesaikan karena sedang dalam proses pencocokan aktif.
                     data: null
 
-  # ════════════════════════════════════════════════════════════════════════════
-  # LOST REPORTS — Laporan Kehilangan
-  # ════════════════════════════════════════════════════════════════════════════
+  # ============================================================================
+  # LOST REPORTS - Laporan Kehilangan
+  # ============================================================================
 
   /api/lost-reports:
-    # ── GET /api/lost-reports ─────────────────────────────────────────────────
+    # -- GET /api/lost-reports -------------------------------------------------
     get:
       tags: [Lost Reports]
       summary: Ambil daftar laporan kehilangan
       description: |
         **Response berbeda berdasarkan role:**
-        - `petugas` — mendapat semua laporan dari semua pelapor, lengkap dengan `pelapor_name` dan `pelapor_email`
-        - `pelapor` — hanya mendapat laporan **miliknya sendiri**, tanpa field pelapor_name & pelapor_email
+        - `petugas` - mendapat semua laporan dari semua pelapor, lengkap dengan `pelapor_name` dan `pelapor_email`
+        - `pelapor` - hanya mendapat laporan **miliknya sendiri**, tanpa field pelapor_name & pelapor_email
 
         Filter via query parameter (semua opsional):
-        - `status` — filter berdasarkan status laporan
-        - `lokasi` — pencarian parsial nama lokasi *(hanya berlaku untuk petugas)*
-        - `search` — pencarian parsial nama barang
+        - `status` - filter berdasarkan status laporan
+        - `lokasi` - pencarian parsial nama lokasi *(hanya berlaku untuk petugas)*
+        - `search` - pencarian parsial nama barang
       operationId: lostReportIndex
       security:
         - BearerAuth: []
@@ -1136,7 +1136,7 @@ paths:
           name: lokasi
           schema:
             type: string
-          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+          description: Cari berdasarkan nama lokasi - hanya untuk petugas
           example: Manggarai
         - in: query
           name: search
@@ -1197,14 +1197,14 @@ paths:
                 message: "Nilai status tidak valid. Pilihan: menunggu, dicocokkan, selesai, ditutup."
                 data: null
 
-    # ── POST /api/lost-reports ────────────────────────────────────────────────
+    # -- POST /api/lost-reports ------------------------------------------------
     post:
       tags: [Lost Reports]
       summary: Buat laporan kehilangan baru
       description: |
         Dapat diakses oleh **petugas** dan **pelapor**.
 
-        `pelapor_id` diambil otomatis dari JWT token — tidak perlu dikirim di body.
+        `pelapor_id` diambil otomatis dari JWT token - tidak perlu dikirim di body.
         Status awal selalu `menunggu`.
       operationId: lostReportStore
       security:
@@ -1260,14 +1260,14 @@ paths:
           $ref: '#/components/responses/ValidationError'
 
   /api/lost-reports/{id}:
-    # ── GET /api/lost-reports/{id} ────────────────────────────────────────────
+    # -- GET /api/lost-reports/{id} --------------------------------------------
     get:
       tags: [Lost Reports]
       summary: Ambil detail satu laporan kehilangan
       description: |
         **Aturan akses:**
-        - `petugas` — dapat melihat laporan siapapun, mendapat `pelapor_name` & `pelapor_email`
-        - `pelapor` — hanya dapat melihat laporan **miliknya sendiri** (404 jika bukan miliknya)
+        - `petugas` - dapat melihat laporan siapapun, mendapat `pelapor_name` & `pelapor_email`
+        - `pelapor` - hanya dapat melihat laporan **miliknya sendiri** (404 jika bukan miliknya)
       operationId: lostReportShow
       security:
         - BearerAuth: []
@@ -1330,14 +1330,14 @@ paths:
                 message: Laporan kehilangan tidak ditemukan.
                 data: null
 
-    # ── PUT /api/lost-reports/{id} ────────────────────────────────────────────
+    # -- PUT /api/lost-reports/{id} --------------------------------------------
     put:
       tags: [Lost Reports]
       summary: Update laporan kehilangan
       description: |
         **Aturan akses:**
-        - `petugas` — dapat update semua laporan, semua status tersedia: `menunggu`, `dicocokkan`, `selesai`, `ditutup`
-        - `pelapor` — hanya dapat update laporan **miliknya sendiri**, status terbatas: `menunggu` atau `ditutup`
+        - `petugas` - dapat update semua laporan, semua status tersedia: `menunggu`, `dicocokkan`, `selesai`, `ditutup`
+        - `pelapor` - hanya dapat update laporan **miliknya sendiri**, status terbatas: `menunggu` atau `ditutup`
 
         **Laporan yang sudah berstatus `selesai` atau `ditutup` tidak dapat diubah lagi (409).**
       operationId: lostReportUpdate
@@ -1412,7 +1412,7 @@ paths:
                 message: Laporan kehilangan tidak ditemukan.
                 data: null
         "409":
-          description: Laporan sudah selesai atau ditutup — tidak dapat diubah
+          description: Laporan sudah selesai atau ditutup - tidak dapat diubah
           content:
             application/json:
               example:
@@ -1422,7 +1422,7 @@ paths:
         "422":
           $ref: '#/components/responses/ValidationError'
 
-    # ── DELETE /api/lost-reports/{id} ─────────────────────────────────────────
+    # -- DELETE /api/lost-reports/{id} -----------------------------------------
     delete:
       tags: [Lost Reports]
       summary: Hapus laporan kehilangan (hard delete)
@@ -1467,7 +1467,7 @@ paths:
                 message: Laporan kehilangan tidak ditemukan.
                 data: null
         "409":
-          description: Laporan sedang dalam pencocokan aktif — tidak dapat dihapus
+          description: Laporan sedang dalam pencocokan aktif - tidak dapat dihapus
           content:
             application/json:
               example:
@@ -1475,9 +1475,8 @@ paths:
                 message: Laporan tidak dapat dihapus karena sedang dalam proses pencocokan aktif.
                 data: null
 
-
   # ----------------------------------------------------------------------------
-  # MATCHING & CLAIMS � Pencocokan dan Klaim
+  # MATCHING & CLAIMS - Pencocokan dan Klaim
   # ----------------------------------------------------------------------------
 
   /api/matches:
@@ -1611,8 +1610,8 @@ paths:
       summary: Ambil detail pencocokan
       description: |
         **Aturan akses:**
-        - `petugas` � dapat melihat semua pencocokan
-        - `pelapor` � hanya dapat melihat pencocokan jika laporannya terkait
+        - `petugas` - dapat melihat semua pencocokan
+        - `pelapor` - hanya dapat melihat pencocokan jika laporannya terkait
       operationId: matchShow
       security:
         - BearerAuth: []
@@ -1793,4 +1792,3 @@ paths:
                 status: error
                 message: Hanya pencocokan berstatus diverifikasi yang dapat diserahkan.
                 data: null
-
