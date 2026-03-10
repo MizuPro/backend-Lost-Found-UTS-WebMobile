@@ -1,0 +1,53 @@
+# Dokumentasi Use Case — CommuterLink Nusantara Lost & Found
+
+Sistem ini dirancang untuk mempermudah koordinasi antara petugas KRL dan penumpang dalam menangani barang yang tertinggal. Berikut adalah Use Case yang diidentifikasi berdasarkan analisis mendalam terhadap codebase backend.
+
+## 👥 Aktor
+1.  **Pelapor (Penumpang)**: Pengguna yang kehilangan barang atau melihat daftar barang temuan.
+2.  **Petugas (Officer)**: Admin yang mengelola data barang, laporan, dan melakukan verifikasi penyerahan.
+3.  **Sistem**: Menangani autentikasi, otorisasi JWT, dan validasi status.
+
+---
+
+## 🛠️ Daftar Use Case
+
+### 1. Manajemen Akun (Semua Pengguna)
+*   **Daftar Akun**: Pengguna baru melakukan registrasi (Role: Petugas/Pelapor).
+*   **Login**: Pengguna masuk ke sistem untuk mendapatkan JWT Token.
+*   **Lihat Profil**: Pengguna melihat informasi akun milik sendiri.
+*   **Perbarui Profil**: Pengguna mengubah nama atau email.
+*   **Ganti Password**: Pengguna memperbarui kredensial keamanan.
+*   **Logout**: Pengguna keluar dari sesi (Token dihapus di sisi client).
+
+### 2. Manajemen Laporan Kehilangan (Pelapor & Petugas)
+*   **Buat Laporan Kehilangan**: Pelapor mencatat barang yang hilang beserta lokasi (Stasiun/Gerbong) dan waktu kejadian.
+*   **Lihat Daftar Laporan Saya**: Pelapor memantau status laporan miliknya sendiri.
+*   **Lihat Semua Laporan**: Petugas melihat seluruh laporan kehilangan yang masuk dari semua penumpang.
+*   **Perbarui Laporan**: Pelapor/Petugas memperbaiki detail laporan (Hanya jika status masih 'Menunggu').
+*   **Tutup/Batalkan Laporan**: Pelapor atau Petugas menutup laporan jika barang ditemukan sendiri atau laporan tidak valid.
+
+### 3. Manajemen Barang Temuan (Petugas & Pelapor)
+*   **Catat Barang Temuan**: Petugas memasukkan data barang yang ditemukan, termasuk foto bukti dan lokasi spesifik.
+*   **Update Data Barang**: Petugas memperbarui status atau deskripsi barang temuan.
+*   **Lihat Daftar Barang Temuan (Umum)**: Pelapor melihat daftar barang yang ditemukan dengan informasi terbatas (Nama barang & Waktu ditemukan saja) untuk keamanan.
+*   **Lihat Detail Barang (Penuh)**: Petugas melihat informasi lengkap termasuk lokasi detail dan foto barang.
+*   **Arsipkan Barang (Soft Delete)**: Petugas menandai barang sebagai 'Selesai' atau menghapusnya secara logis jika sudah terlalu lama tidak diklaim.
+
+### 4. Proses Pencocokan & Penyerahan (Petugas)
+*   **Identifikasi Potensi Match**: Petugas mencari kesamaan antara Laporan Kehilangan dan Barang Temuan.
+*   **Buat Hubungan Pencocokan (Match)**: Petugas menautkan Barang Temuan ID dengan Laporan ID. Status keduanya otomatis berubah menjadi 'Dicocokkan'.
+*   **Verifikasi Klaim Kepemilikan**: Petugas melakukan tanya jawab atau verifikasi bukti tambahan kepada pelapor. Status match berubah menjadi 'Diverifikasi'.
+*   **Catat Penyerahan (Handover)**: Petugas mendokumentasikan serah terima barang. 
+    *   Match status -> 'Selesai'.
+    *   Barang status -> 'Diserahkan'.
+    *   Laporan status -> 'Selesai'.
+*   **Batal Pencocokan**: Petugas memutuskan hubungan match jika bukti tidak kuat, mengembalikan status barang ke 'Tersimpan' dan laporan ke 'Menunggu'.
+
+---
+
+## 📊 Diagram Alur Logika (High-Level)
+
+1.  **Pelapor** lapor kehilangan -> Status: **Menunggu**.
+2.  **Petugas** temukan barang -> Status: **Tersimpan**.
+3.  **Petugas** melakukan **Match** -> Status Keduanya: **Dicocokkan**.
+4.  **Petugas** verifikasi & serahkan -> Status Akhir: **Selesai / Diserahkan**.
