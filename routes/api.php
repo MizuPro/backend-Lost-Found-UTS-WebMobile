@@ -45,5 +45,6 @@ return [
     'POST /api/matches'               => ['MatchController', 'matchItem',     ['auth', 'role:petugas']],
     'PUT /api/matches/{id}/verify'    => ['MatchController', 'verifyClaim',   ['auth', 'role:petugas']],
     'PUT /api/matches/{id}/handover'  => ['MatchController', 'recordHandover', ['auth', 'role:petugas']],
+    'PUT /api/matches/{id}/cancel'    => ['MatchController', 'cancelMatch',    ['auth', 'role:petugas']],
 
 ];

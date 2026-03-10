@@ -212,12 +212,9 @@ class MatchController
 
             $this->matchModel->updateStatus($id, 'selesai', $catatan, $waktuSerah);
 
-            // Update status barang temuan -> diserahkan (nanti bisa diarsipkan pakai archive barang temuan)
-            // Atau kita langsung archive (set selesai + deleted_at)
+            // Update status barang temuan -> selesai sesuai permintaan
             $barang = $this->foundItemModel->findById($match['barang_temuan_id']);
-            $this->foundItemModel->update($match['barang_temuan_id'], array_merge($barang, ['status' => 'diserahkan']));
-            // Atau jika kita ingin otomatis selesai:
-            // $this->foundItemModel->archive($match['barang_temuan_id'], "Diserahkan melalui pencocokan #{$id}");
+            $this->foundItemModel->update($match['barang_temuan_id'], array_merge($barang, ['status' => 'selesai']));
 
             // Update status laporan kehilangan -> selesai
             $laporan = $this->lostReportModel->findById($match['laporan_id']);
@@ -234,6 +231,56 @@ class MatchController
         } catch (\Exception $e) {
             $db->rollBack();
             ResponseHelper::error('Terjadi kesalahan saat mencatat penyerahan: ' . $e->getMessage(), 500);
+        }
+    }
+
+    // ── PUT /api/matches/{id}/cancel ─────────────────────────────────────────
+    public function cancelMatch(): void
+    {
+        $id = (int) ($GLOBALS['route_params']['id'] ?? 0);
+        $match = $this->matchModel->findById($id);
+
+        if (!$match) {
+            ResponseHelper::notFound('Data pencocokan tidak ditemukan.');
+        }
+
+        if (!in_array($match['status'], ['pending', 'diverifikasi'])) {
+            ResponseHelper::error('Hanya pencocokan berstatus pending atau diverifikasi yang dapat dibatalkan.', 409);
+        }
+
+        $input = ValidationHelper::sanitizeAll(ValidationHelper::getInput());
+        $catatan = isset($input['catatan']) ? trim($input['catatan']) : 'Dibatalkan oleh petugas';
+
+        try {
+            $db = Database::getInstance();
+            $db->beginTransaction();
+
+            // 1. Update status pencocokan -> dibatalkan
+            $this->matchModel->updateStatus($id, 'dibatalkan', $catatan);
+
+            // 2. Kembalikan status barang temuan -> tersimpan
+            $barang = $this->foundItemModel->findById($match['barang_temuan_id']);
+            if ($barang) {
+                $this->foundItemModel->update($match['barang_temuan_id'], array_merge($barang, ['status' => 'tersimpan']));
+            }
+
+            // 3. Kembalikan status laporan kehilangan -> menunggu
+            $laporan = $this->lostReportModel->findById($match['laporan_id']);
+            if ($laporan) {
+                $this->lostReportModel->update($match['laporan_id'], array_merge($laporan, ['status' => 'menunggu']));
+            }
+
+            $db->commit();
+
+            $updatedMatch = $this->matchModel->findById($id);
+            ResponseHelper::success(
+                ['match' => $updatedMatch],
+                'Pencocokan berhasil dibatalkan. Status barang dan laporan telah dikembalikan.'
+            );
+
+        } catch (\Exception $e) {
+            $db->rollBack();
+            ResponseHelper::error('Terjadi kesalahan saat membatalkan pencocokan: ' . $e->getMessage(), 500);
         }
     }
 }

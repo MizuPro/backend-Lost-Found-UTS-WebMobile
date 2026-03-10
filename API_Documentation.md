@@ -1736,7 +1736,7 @@ paths:
         Hanya **petugas**.
         Mengubah status pencocokan dari `diverifikasi` menjadi `selesai`.
         Mencatat `waktu_serah`.
-        Mengubah status barang temuan menjadi `diserahkan`.
+        Mengubah status barang temuan menjadi `selesai`.
         Mengubah status laporan kehilangan menjadi `selesai`.
       operationId: matchHandover
       security:
@@ -1786,9 +1786,69 @@ paths:
                 data: null
         "409":
           description: Status bukan diverifikasi
+          $ref: "#/components/responses/Conflict"
+
+  /api/matches/{id}/cancel:
+    # -- PUT /api/matches/{id}/cancel ------------------------------------------
+    put:
+      tags: [Matches]
+      summary: Batalkan pencocokan
+      description: |
+        Hanya **petugas**.
+        Membatalkan hubungan antara barang temuan dan laporan kehilangan.
+        Mengubah status pencocokan menjadi `dibatalkan`.
+        Mengembalikan status barang temuan menjadi `tersimpan`.
+        Mengembalikan status laporan kehilangan menjadi `menunggu`.
+      operationId: matchCancel
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                catatan:
+                  type: string
+                  example: "Bukti foto tidak cocok setelah verifikasi manual"
+      responses:
+        "200":
+          description: Pencocokan berhasil dibatalkan
+          content:
+            application/json:
+              example:
+                status: success
+                message: Pencocokan berhasil dibatalkan. Status barang dan laporan telah dikembalikan.
+                data:
+                  match:
+                    id: 1
+                    status: dibatalkan
+                    catatan: "Bukti foto tidak cocok setelah verifikasi manual"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Pencocokan tidak ditemukan
           content:
             application/json:
               example:
                 status: error
-                message: Hanya pencocokan berstatus diverifikasi yang dapat diserahkan.
+                message: Data pencocokan tidak ditemukan.
+                data: null
+        "409":
+          description: Status bukan pending atau diverifikasi
+          content:
+            application/json:
+              example:
+                status: error
+                message: Hanya pencocokan berstatus pending atau diverifikasi yang dapat dibatalkan.
                 data: null
