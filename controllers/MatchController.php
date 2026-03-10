@@ -213,8 +213,7 @@ class MatchController
             $this->matchModel->updateStatus($id, 'selesai', $catatan, $waktuSerah);
 
             // Update status barang temuan -> selesai sesuai permintaan
-            $barang = $this->foundItemModel->findById($match['barang_temuan_id']);
-            $this->foundItemModel->update($match['barang_temuan_id'], array_merge($barang, ['status' => 'selesai']));
+            $this->foundItemModel->archive($match['barang_temuan_id'], $catatan);
 
             // Update status laporan kehilangan -> selesai
             $laporan = $this->lostReportModel->findById($match['laporan_id']);

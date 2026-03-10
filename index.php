@@ -39,6 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $routes = require_once __DIR__ . '/routes/api.php';
 
 $method     = $_SERVER['REQUEST_METHOD'];
+
+// Method Spoofing untuk PUT/PATCH/DELETE via POST (misal dari form-data)
+if ($method === 'POST' && isset($_POST['_method'])) {
+    $spoofedMethod = strtoupper($_POST['_method']);
+    if (in_array($spoofedMethod, ['PUT', 'PATCH', 'DELETE'], true)) {
+        $method = $spoofedMethod;
+    }
+}
+
 $requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 
 // Strip base path agar routing bekerja di subdirektori (misal: /backend-Lost-Found)
