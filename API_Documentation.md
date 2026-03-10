@@ -1,4 +1,4 @@
-openapi: 3.0.3
+﻿openapi: 3.0.3
 
 info:
   title: CommuterLink Nusantara Lost & Found API
@@ -1473,5 +1473,324 @@ paths:
               example:
                 status: error
                 message: Laporan tidak dapat dihapus karena sedang dalam proses pencocokan aktif.
+                data: null
+
+
+  # ----------------------------------------------------------------------------
+  # MATCHING & CLAIMS � Pencocokan dan Klaim
+  # ----------------------------------------------------------------------------
+
+  /api/matches:
+    # -- GET /api/matches ------------------------------------------------------
+    get:
+      tags: [Matches]
+      summary: Ambil daftar seluruh pencocokan barang
+      description: |
+        Hanya **petugas** yang dapat mengakses endpoint ini.
+        Mendukung filter status pencocokan.
+      operationId: matchIndex
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, diverifikasi, selesai, dibatalkan]
+          description: Filter berdasarkan status pencocokan
+          example: pending
+      responses:
+        "200":
+          description: Daftar pencocokan berhasil diambil
+          content:
+            application/json:
+              example:
+                status: success
+                message: Data pencocokan berhasil diambil.
+                data:
+                  matches:
+                    - id: 1
+                      barang_temuan_id: 1
+                      laporan_id: 1
+                      petugas_id: 1
+                      status: pending
+                      catatan: null
+                      waktu_serah: null
+                      created_at: "2026-03-10 09:00:00"
+                      updated_at: "2026-03-10 09:00:00"
+                      barang_temuan_nama: Dompet Hitam
+                      laporan_nama: Dompet Hitam
+                      petugas_name: Admin Petugas
+                      pelapor_name: Budi Santoso
+                      pelapor_email: budi@example.com
+                  total: 1
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "422":
+          description: Nilai parameter status tidak valid
+          content:
+            application/json:
+              example:
+                status: error
+                message: "Nilai status tidak valid. Pilihan: pending, diverifikasi, selesai, dibatalkan."
+                data: null
+
+    # -- POST /api/matches -----------------------------------------------------
+    post:
+      tags: [Matches]
+      summary: Buat pencocokan baru antara barang temuan dan laporan kehilangan
+      description: |
+        Hanya **petugas** yang dapat mengakses endpoint ini.
+        Mengubah status barang dan laporan menjadi `dicocokkan`.
+        Status pencocokan awal adalah `pending`.
+      operationId: matchItem
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [barang_temuan_id, laporan_id]
+              properties:
+                barang_temuan_id:
+                  type: integer
+                  example: 1
+                laporan_id:
+                  type: integer
+                  example: 1
+      responses:
+        "201":
+          description: Pencocokan berhasil dibuat
+          content:
+            application/json:
+              example:
+                status: success
+                message: Barang temuan dan laporan kehilangan berhasil dicocokkan (status: pending).
+                data:
+                  match:
+                    id: 1
+                    barang_temuan_id: 1
+                    laporan_id: 1
+                    petugas_id: 1
+                    status: pending
+                    catatan: null
+                    waktu_serah: null
+                    created_at: "2026-03-10 09:00:00"
+                    updated_at: "2026-03-10 09:00:00"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Barang atau laporan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Barang temuan tidak ditemukan.
+                data: null
+        "409":
+          description: Barang/laporan sudah selesai, atau sudah ada pencocokan aktif
+          content:
+            application/json:
+              example:
+                status: error
+                message: Pencocokan untuk barang dan laporan ini sudah ada (aktif).
+                data: null
+        "422":
+          $ref: "#/components/responses/ValidationError"
+
+  /api/matches/{id}:
+    # -- GET /api/matches/{id} -------------------------------------------------
+    get:
+      tags: [Matches]
+      summary: Ambil detail pencocokan
+      description: |
+        **Aturan akses:**
+        - `petugas` � dapat melihat semua pencocokan
+        - `pelapor` � hanya dapat melihat pencocokan jika laporannya terkait
+      operationId: matchShow
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Detail pencocokan berhasil diambil
+          content:
+            application/json:
+              example:
+                status: success
+                message: Detail pencocokan berhasil diambil.
+                data:
+                  match:
+                    id: 1
+                    barang_temuan_id: 1
+                    laporan_id: 1
+                    petugas_id: 1
+                    status: pending
+                    catatan: null
+                    waktu_serah: null
+                    created_at: "2026-03-10 09:00:00"
+                    updated_at: "2026-03-10 09:00:00"
+                    barang_temuan_nama: Dompet Hitam
+                    laporan_nama: Dompet Hitam
+                    petugas_name: Admin Petugas
+                    pelapor_name: Budi Santoso
+                    pelapor_email: budi@example.com
+                    pelapor_id: 3
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Akses ditolak (bukan milik pelapor)
+          content:
+            application/json:
+              example:
+                status: error
+                message: Akses ditolak. Anda tidak berhak melihat pencocokan ini.
+                data: null
+        "404":
+          description: Pencocokan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Data pencocokan tidak ditemukan.
+                data: null
+
+  /api/matches/{id}/verify:
+    # -- PUT /api/matches/{id}/verify ------------------------------------------
+    put:
+      tags: [Matches]
+      summary: Verifikasi klaim pencocokan
+      description: |
+        Hanya **petugas**. Mengubah status pencocokan dari `pending` menjadi `diverifikasi`.
+      operationId: matchVerify
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                catatan:
+                  type: string
+                  example: "KTP sesuai dengan deskripsi pelapor"
+      responses:
+        "200":
+          description: Klaim berhasil diverifikasi
+          content:
+            application/json:
+              example:
+                status: success
+                message: Pencocokan berhasil diverifikasi (status: diverifikasi).
+                data:
+                  match:
+                    id: 1
+                    status: diverifikasi
+                    catatan: "KTP sesuai dengan deskripsi pelapor"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Pencocokan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Data pencocokan tidak ditemukan.
+                data: null
+        "409":
+          description: Status bukan pending
+          content:
+            application/json:
+              example:
+                status: error
+                message: Hanya pencocokan berstatus pending yang dapat diverifikasi.
+                data: null
+
+  /api/matches/{id}/handover:
+    # -- PUT /api/matches/{id}/handover ----------------------------------------
+    put:
+      tags: [Matches]
+      summary: Catat penyerahan barang ke pelapor
+      description: |
+        Hanya **petugas**.
+        Mengubah status pencocokan dari `diverifikasi` menjadi `selesai`.
+        Mencatat `waktu_serah`.
+        Mengubah status barang temuan menjadi `diserahkan`.
+        Mengubah status laporan kehilangan menjadi `selesai`.
+      operationId: matchHandover
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                catatan:
+                  type: string
+                  example: "Diserahkan langsung kepada Budi Santoso di Stasiun Manggarai"
+      responses:
+        "200":
+          description: Barang berhasil diserahkan
+          content:
+            application/json:
+              example:
+                status: success
+                message: Barang berhasil diserahkan kepada pelapor. Pencocokan selesai.
+                data:
+                  match:
+                    id: 1
+                    status: selesai
+                    waktu_serah: "2026-03-10 09:30:00"
+                    catatan: "KTP sesuai. Diserahkan langsung kepada Budi Santoso di Stasiun Manggarai"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: Pencocokan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Data pencocokan tidak ditemukan.
+                data: null
+        "409":
+          description: Status bukan diverifikasi
+          content:
+            application/json:
+              example:
+                status: error
+                message: Hanya pencocokan berstatus diverifikasi yang dapat diserahkan.
                 data: null
 
