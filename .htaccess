@@ -1,0 +1,11 @@
+Options -Indexes
+
+RewriteEngine On
+
+# Izinkan akses langsung ke file/folder yang ada (static assets, uploads)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Arahkan semua request ke index.php
+RewriteRule ^(.*)$ index.php [QSA,L]
+
