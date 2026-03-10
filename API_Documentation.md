@@ -25,6 +25,11 @@ tags:
       Manajemen barang temuan.
       - **petugas** — dapat melakukan semua operasi (index, show, store, update, archive)
       - **pelapor** — hanya dapat melihat daftar dan detail, **dengan field terbatas**: `id`, `nama_barang`, `waktu_temuan`, `status` saja (deskripsi, lokasi, foto disembunyikan untuk mencegah klaim palsu)
+  - name: Lost Reports
+    description: |
+      Manajemen laporan kehilangan.
+      - **petugas** — dapat melakukan semua operasi (index, show, store, update, delete) pada semua laporan + melihat info pelapor lengkap
+      - **pelapor** — dapat membuat laporan, melihat & update hanya laporan **miliknya sendiri**, dan menutup laporan dengan status `ditutup`
 
 # ── Security Schemes & Reusable Components ──────────────────────────────────
 components:
@@ -165,6 +170,87 @@ components:
           type: string
           enum: [tersimpan, dicocokkan, diserahkan, selesai]
           example: tersimpan
+
+    LostReport:
+      description: Data laporan kehilangan lengkap — untuk petugas
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        pelapor_id:
+          type: integer
+          example: 3
+        pelapor_name:
+          type: string
+          example: Budi Santoso
+        pelapor_email:
+          type: string
+          format: email
+          example: budi@example.com
+        nama_barang:
+          type: string
+          example: Tas Ransel Biru
+        deskripsi:
+          type: string
+          nullable: true
+          example: Tas ransel merk Eiger warna biru navy berisi laptop
+        lokasi:
+          type: string
+          example: KRL Commuter Line jurusan Bogor-Jakarta Kota
+        waktu_hilang:
+          type: string
+          format: date-time
+          example: "2026-03-10 07:15:00"
+        status:
+          type: string
+          enum: [menunggu, dicocokkan, selesai, ditutup]
+          example: menunggu
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:00:00"
+
+    LostReportPelapor:
+      description: Data laporan kehilangan milik pelapor sendiri (tanpa info pelapor)
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        pelapor_id:
+          type: integer
+          example: 3
+        nama_barang:
+          type: string
+          example: Tas Ransel Biru
+        deskripsi:
+          type: string
+          nullable: true
+          example: Tas ransel merk Eiger warna biru navy berisi laptop
+        lokasi:
+          type: string
+          example: KRL Commuter Line jurusan Bogor-Jakarta Kota
+        waktu_hilang:
+          type: string
+          format: date-time
+          example: "2026-03-10 07:15:00"
+        status:
+          type: string
+          enum: [menunggu, dicocokkan, selesai, ditutup]
+          example: menunggu
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:00:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:00:00"
 
   responses:
     Unauthorized:
@@ -1016,4 +1102,376 @@ paths:
                     status: error
                     message: Barang temuan tidak dapat diselesaikan karena sedang dalam proses pencocokan aktif.
                     data: null
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # LOST REPORTS — Laporan Kehilangan
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /api/lost-reports:
+    # ── GET /api/lost-reports ─────────────────────────────────────────────────
+    get:
+      tags: [Lost Reports]
+      summary: Ambil daftar laporan kehilangan
+      description: |
+        **Response berbeda berdasarkan role:**
+        - `petugas` — mendapat semua laporan dari semua pelapor, lengkap dengan `pelapor_name` dan `pelapor_email`
+        - `pelapor` — hanya mendapat laporan **miliknya sendiri**, tanpa field pelapor_name & pelapor_email
+
+        Filter via query parameter (semua opsional):
+        - `status` — filter berdasarkan status laporan
+        - `lokasi` — pencarian parsial nama lokasi *(hanya berlaku untuk petugas)*
+        - `search` — pencarian parsial nama barang
+      operationId: lostReportIndex
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [menunggu, dicocokkan, selesai, ditutup]
+          description: Filter berdasarkan status laporan
+          example: menunggu
+        - in: query
+          name: lokasi
+          schema:
+            type: string
+          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+          example: Manggarai
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Cari berdasarkan nama barang (partial match)
+          example: tas
+      responses:
+        "200":
+          description: Daftar laporan kehilangan berhasil diambil
+          content:
+            application/json:
+              examples:
+                petugas:
+                  summary: Response untuk petugas (semua laporan + info pelapor)
+                  value:
+                    status: success
+                    message: Data laporan kehilangan berhasil diambil.
+                    data:
+                      lost_reports:
+                        - id: 1
+                          pelapor_id: 3
+                          pelapor_name: Budi Santoso
+                          pelapor_email: budi@example.com
+                          nama_barang: Tas Ransel Biru
+                          deskripsi: Tas ransel merk Eiger warna biru navy berisi laptop
+                          lokasi: KRL Commuter Line jurusan Bogor-Jakarta Kota
+                          waktu_hilang: "2026-03-10 07:15:00"
+                          status: menunggu
+                          created_at: "2026-03-10 08:00:00"
+                          updated_at: "2026-03-10 08:00:00"
+                      total: 1
+                pelapor:
+                  summary: Response untuk pelapor (hanya laporan miliknya)
+                  value:
+                    status: success
+                    message: Data laporan kehilangan berhasil diambil.
+                    data:
+                      lost_reports:
+                        - id: 1
+                          pelapor_id: 3
+                          nama_barang: Tas Ransel Biru
+                          deskripsi: Tas ransel merk Eiger warna biru navy berisi laptop
+                          lokasi: KRL Commuter Line jurusan Bogor-Jakarta Kota
+                          waktu_hilang: "2026-03-10 07:15:00"
+                          status: menunggu
+                          created_at: "2026-03-10 08:00:00"
+                          updated_at: "2026-03-10 08:00:00"
+                      total: 1
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "422":
+          description: Nilai parameter status tidak valid
+          content:
+            application/json:
+              example:
+                status: error
+                message: "Nilai status tidak valid. Pilihan: menunggu, dicocokkan, selesai, ditutup."
+                data: null
+
+    # ── POST /api/lost-reports ────────────────────────────────────────────────
+    post:
+      tags: [Lost Reports]
+      summary: Buat laporan kehilangan baru
+      description: |
+        Dapat diakses oleh **petugas** dan **pelapor**.
+
+        `pelapor_id` diambil otomatis dari JWT token — tidak perlu dikirim di body.
+        Status awal selalu `menunggu`.
+      operationId: lostReportStore
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_barang, lokasi, waktu_hilang]
+              properties:
+                nama_barang:
+                  type: string
+                  maxLength: 150
+                  example: Tas Ransel Biru
+                deskripsi:
+                  type: string
+                  nullable: true
+                  example: Tas ransel merk Eiger warna biru navy berisi laptop
+                lokasi:
+                  type: string
+                  maxLength: 200
+                  example: KRL Commuter Line jurusan Bogor-Jakarta Kota
+                waktu_hilang:
+                  type: string
+                  description: Format wajib YYYY-MM-DD HH:MM:SS
+                  example: "2026-03-10 07:15:00"
+      responses:
+        "201":
+          description: Laporan kehilangan berhasil dibuat
+          content:
+            application/json:
+              example:
+                status: success
+                message: Laporan kehilangan berhasil dibuat.
+                data:
+                  lost_report:
+                    id: 1
+                    pelapor_id: 3
+                    pelapor_name: Budi Santoso
+                    pelapor_email: budi@example.com
+                    nama_barang: Tas Ransel Biru
+                    deskripsi: Tas ransel merk Eiger warna biru navy berisi laptop
+                    lokasi: KRL Commuter Line jurusan Bogor-Jakarta Kota
+                    waktu_hilang: "2026-03-10 07:15:00"
+                    status: menunggu
+                    created_at: "2026-03-10 08:00:00"
+                    updated_at: "2026-03-10 08:00:00"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /api/lost-reports/{id}:
+    # ── GET /api/lost-reports/{id} ────────────────────────────────────────────
+    get:
+      tags: [Lost Reports]
+      summary: Ambil detail satu laporan kehilangan
+      description: |
+        **Aturan akses:**
+        - `petugas` — dapat melihat laporan siapapun, mendapat `pelapor_name` & `pelapor_email`
+        - `pelapor` — hanya dapat melihat laporan **miliknya sendiri** (404 jika bukan miliknya)
+      operationId: lostReportShow
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID laporan kehilangan
+          example: 1
+      responses:
+        "200":
+          description: Detail laporan kehilangan berhasil diambil
+          content:
+            application/json:
+              examples:
+                petugas:
+                  summary: Response untuk petugas (full data + info pelapor)
+                  value:
+                    status: success
+                    message: Detail laporan kehilangan berhasil diambil.
+                    data:
+                      lost_report:
+                        id: 1
+                        pelapor_id: 3
+                        pelapor_name: Budi Santoso
+                        pelapor_email: budi@example.com
+                        nama_barang: Tas Ransel Biru
+                        deskripsi: Tas ransel merk Eiger warna biru navy berisi laptop
+                        lokasi: KRL Commuter Line jurusan Bogor-Jakarta Kota
+                        waktu_hilang: "2026-03-10 07:15:00"
+                        status: menunggu
+                        created_at: "2026-03-10 08:00:00"
+                        updated_at: "2026-03-10 08:00:00"
+                pelapor:
+                  summary: Response untuk pelapor (laporan miliknya)
+                  value:
+                    status: success
+                    message: Detail laporan kehilangan berhasil diambil.
+                    data:
+                      lost_report:
+                        id: 1
+                        pelapor_id: 3
+                        nama_barang: Tas Ransel Biru
+                        deskripsi: Tas ransel merk Eiger warna biru navy berisi laptop
+                        lokasi: KRL Commuter Line jurusan Bogor-Jakarta Kota
+                        waktu_hilang: "2026-03-10 07:15:00"
+                        status: menunggu
+                        created_at: "2026-03-10 08:00:00"
+                        updated_at: "2026-03-10 08:00:00"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          description: Laporan tidak ditemukan (atau bukan milik pelapor)
+          content:
+            application/json:
+              example:
+                status: error
+                message: Laporan kehilangan tidak ditemukan.
+                data: null
+
+    # ── PUT /api/lost-reports/{id} ────────────────────────────────────────────
+    put:
+      tags: [Lost Reports]
+      summary: Update laporan kehilangan
+      description: |
+        **Aturan akses:**
+        - `petugas` — dapat update semua laporan, semua status tersedia: `menunggu`, `dicocokkan`, `selesai`, `ditutup`
+        - `pelapor` — hanya dapat update laporan **miliknya sendiri**, status terbatas: `menunggu` atau `ditutup`
+
+        **Laporan yang sudah berstatus `selesai` atau `ditutup` tidak dapat diubah lagi (409).**
+      operationId: lostReportUpdate
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_barang, lokasi, waktu_hilang, status]
+              properties:
+                nama_barang:
+                  type: string
+                  maxLength: 150
+                  example: Tas Ransel Biru (Update)
+                deskripsi:
+                  type: string
+                  nullable: true
+                  example: Tas ransel merk Eiger warna biru navy berisi laptop dan charger
+                lokasi:
+                  type: string
+                  maxLength: 200
+                  example: KRL Commuter Line jurusan Bogor-Jakarta Kota, gerbong 3
+                waktu_hilang:
+                  type: string
+                  description: Format wajib YYYY-MM-DD HH:MM:SS
+                  example: "2026-03-10 07:15:00"
+                status:
+                  type: string
+                  description: |
+                    Petugas: menunggu | dicocokkan | selesai | ditutup
+                    Pelapor: menunggu | ditutup
+                  example: menunggu
+      responses:
+        "200":
+          description: Laporan kehilangan berhasil diperbarui
+          content:
+            application/json:
+              example:
+                status: success
+                message: Laporan kehilangan berhasil diperbarui.
+                data:
+                  lost_report:
+                    id: 1
+                    pelapor_id: 3
+                    pelapor_name: Budi Santoso
+                    pelapor_email: budi@example.com
+                    nama_barang: Tas Ransel Biru (Update)
+                    deskripsi: Tas ransel merk Eiger warna biru navy berisi laptop dan charger
+                    lokasi: KRL Commuter Line jurusan Bogor-Jakarta Kota, gerbong 3
+                    waktu_hilang: "2026-03-10 07:15:00"
+                    status: menunggu
+                    created_at: "2026-03-10 08:00:00"
+                    updated_at: "2026-03-10 09:30:00"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          description: Laporan tidak ditemukan (atau bukan milik pelapor)
+          content:
+            application/json:
+              example:
+                status: error
+                message: Laporan kehilangan tidak ditemukan.
+                data: null
+        "409":
+          description: Laporan sudah selesai atau ditutup — tidak dapat diubah
+          content:
+            application/json:
+              example:
+                status: error
+                message: Laporan yang sudah selesai atau ditutup tidak dapat diubah.
+                data: null
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+    # ── DELETE /api/lost-reports/{id} ─────────────────────────────────────────
+    delete:
+      tags: [Lost Reports]
+      summary: Hapus laporan kehilangan (hard delete)
+      description: |
+        Hanya **petugas** yang dapat mengakses endpoint ini.
+
+        Laporan akan **dihapus permanen** dari database.
+
+        **Akan ditolak (409) jika:**
+        - Laporan sedang dalam pencocokan aktif (status pencocokan: `pending` / `diverifikasi`)
+      operationId: lostReportDelete
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID laporan kehilangan yang akan dihapus
+          example: 1
+      responses:
+        "200":
+          description: Laporan berhasil dihapus
+          content:
+            application/json:
+              example:
+                status: success
+                message: Laporan kehilangan berhasil dihapus.
+                data:
+                  id: 1
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          description: Laporan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Laporan kehilangan tidak ditemukan.
+                data: null
+        "409":
+          description: Laporan sedang dalam pencocokan aktif — tidak dapat dihapus
+          content:
+            application/json:
+              example:
+                status: error
+                message: Laporan tidak dapat dihapus karena sedang dalam proses pencocokan aktif.
+                data: null
 

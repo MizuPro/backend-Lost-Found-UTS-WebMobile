@@ -16,10 +16,12 @@ require_once __DIR__ . '/middleware/RoleMiddleware.php';
 // Models
 require_once __DIR__ . '/models/UserModel.php';
 require_once __DIR__ . '/models/FoundItemModel.php';
+require_once __DIR__ . '/models/LostReportModel.php';
 
 // Controllers
 require_once __DIR__ . '/controllers/AuthController.php';
 require_once __DIR__ . '/controllers/FoundItemController.php';
+require_once __DIR__ . '/controllers/LostReportController.php';
 
 // ── CORS Headers ──────────────────────────────────────────────────────────────
 header('Content-Type: application/json; charset=utf-8');
