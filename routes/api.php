@@ -24,11 +24,13 @@ return [
     'PUT /api/auth/change-password'   => ['AuthController',  'changePassword',  ['auth']],
 
     // ── BARANG TEMUAN (Found Items) ───────────────────────────────────────────
-    'GET /api/found-items'            => ['FoundItemController', 'index',   ['auth', 'role:petugas,pelapor']],
-    'GET /api/found-items/{id}'       => ['FoundItemController', 'show',    ['auth', 'role:petugas,pelapor']],
-    'POST /api/found-items'           => ['FoundItemController', 'store',   ['auth', 'role:petugas']],
-    'PUT /api/found-items/{id}'       => ['FoundItemController', 'update',  ['auth', 'role:petugas']],
-    'DELETE /api/found-items/{id}'    => ['FoundItemController', 'delete',  ['auth', 'role:petugas']],
+    'GET /api/found-items'                    => ['FoundItemController', 'index',   ['auth', 'role:petugas,pelapor']],
+    'GET /api/found-items/selesai'            => ['FoundItemController', 'selesai', ['auth', 'role:petugas,pelapor']],
+    'GET /api/found-items/ongoing'            => ['FoundItemController', 'ongoing', ['auth', 'role:petugas,pelapor']],
+    'GET /api/found-items/{id}'               => ['FoundItemController', 'show',    ['auth', 'role:petugas,pelapor']],
+    'POST /api/found-items'                   => ['FoundItemController', 'store',   ['auth', 'role:petugas']],
+    'PUT /api/found-items/{id}'               => ['FoundItemController', 'update',  ['auth', 'role:petugas']],
+    'PATCH /api/found-items/{id}/archive'     => ['FoundItemController', 'archive', ['auth', 'role:petugas']],
 
     // ── LAPORAN KEHILANGAN (Lost Reports) ────────────────────────────────────
     'GET /api/lost-reports'           => ['LostReportController', 'index',   ['auth', 'role:petugas,pelapor']],
@@ -45,5 +47,3 @@ return [
     'PUT /api/matches/{id}/handover'  => ['MatchController', 'recordHandover', ['auth', 'role:petugas']],
 
 ];
-
-

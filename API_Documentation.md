@@ -20,6 +20,11 @@ servers:
 tags:
   - name: Auth
     description: Autentikasi dan manajemen akun pengguna
+  - name: Found Items
+    description: |
+      Manajemen barang temuan.
+      - **petugas** — dapat melakukan semua operasi (index, show, store, update, archive)
+      - **pelapor** — hanya dapat melihat daftar dan detail, **dengan field terbatas**: `id`, `nama_barang`, `waktu_temuan`, `status` saja (deskripsi, lokasi, foto disembunyikan untuk mencegah klaim palsu)
 
 # ── Security Schemes & Reusable Components ──────────────────────────────────
 components:
@@ -94,6 +99,73 @@ components:
           format: date-time
           example: "2026-03-10 08:00:00"
 
+    FoundItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        petugas_id:
+          type: integer
+          example: 1
+        petugas_name:
+          type: string
+          example: Admin Petugas
+        nama_barang:
+          type: string
+          example: Dompet Hitam
+        deskripsi:
+          type: string
+          nullable: true
+          example: Dompet kulit warna hitam berisi KTP
+        lokasi:
+          type: string
+          example: Stasiun Manggarai, Peron 3
+        waktu_temuan:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:30:00"
+        foto_path:
+          type: string
+          nullable: true
+          example: "http://localhost/backend-Lost-Found/storage/uploads/found_abc123.jpg"
+        catatan_selesai:
+          type: string
+          nullable: true
+          description: Diisi saat barang diarsipkan via endpoint archive
+          example: "Barang telah dikembalikan ke pemilik"
+        status:
+          type: string
+          enum: [tersimpan, dicocokkan, diserahkan, selesai]
+          example: tersimpan
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:35:00"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:35:00"
+
+    FoundItemPublic:
+      description: Data terbatas untuk pelapor — hanya nama dan waktu ditemukan
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nama_barang:
+          type: string
+          example: Dompet Hitam
+        waktu_temuan:
+          type: string
+          format: date-time
+          example: "2026-03-10 08:30:00"
+        status:
+          type: string
+          enum: [tersimpan, dicocokkan, diserahkan, selesai]
+          example: tersimpan
+
   responses:
     Unauthorized:
       description: Token tidak ada atau tidak valid
@@ -134,6 +206,17 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/ValidationErrorResponse'
+
+    Conflict:
+      description: Konflik data — operasi tidak dapat dilakukan
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            status: error
+            message: Operasi tidak dapat dilakukan karena konflik data.
+            data: null
 
 # ── Paths ────────────────────────────────────────────────────────────────────
 paths:
@@ -411,4 +494,526 @@ paths:
                 data: null
         "422":
           $ref: '#/components/responses/ValidationError'
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # FOUND ITEMS — Barang Temuan
+  # ════════════════════════════════════════════════════════════════════════════
+
+  /api/found-items:
+    # ── GET /api/found-items ──────────────────────────────────────────────────
+    get:
+      tags: [Found Items]
+      summary: Ambil daftar semua barang temuan (Termasuk yang selesai)
+      description: |
+        Mengambil semua daftar barang temuan tanpa kecuali (termasuk yang sudah berstatus `selesai`/diarsipkan).
+
+        **Response berbeda berdasarkan role:**
+        - `petugas` — mendapat data lengkap: nama, deskripsi, lokasi, foto, catatan, petugas_name, dll
+        - `pelapor` — hanya mendapat: `id`, `nama_barang`, `waktu_temuan`, `status`
+
+        Filter via query parameter (semua opsional):
+        - `status` — filter berdasarkan status barang
+        - `lokasi` — pencarian parsial nama lokasi *(hanya berlaku untuk petugas)*
+        - `search` — pencarian parsial nama barang
+      operationId: foundItemIndex
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [tersimpan, dicocokkan, diserahkan, selesai]
+          description: Filter berdasarkan status barang
+          example: tersimpan
+        - in: query
+          name: lokasi
+          schema:
+            type: string
+          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+          example: Manggarai
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Cari berdasarkan nama barang (partial match)
+          example: dompet
+      responses:
+        "200":
+          description: |
+            Daftar barang temuan berhasil diambil.
+            Field yang dikembalikan berbeda berdasarkan role pemanggil.
+          content:
+            application/json:
+              examples:
+                petugas:
+                  summary: Response untuk petugas (full data)
+                  value:
+                    status: success
+                    message: Data barang temuan berhasil diambil.
+                    data:
+                      found_items:
+                        - id: 1
+                          petugas_id: 1
+                          petugas_name: Admin Petugas
+                          nama_barang: Dompet Hitam
+                          deskripsi: Dompet kulit warna hitam berisi KTP
+                          lokasi: Stasiun Manggarai, Peron 3
+                          waktu_temuan: "2026-03-10 08:30:00"
+                          foto_path: null
+                          catatan_selesai: null
+                          status: tersimpan
+                          created_at: "2026-03-10 08:35:00"
+                          updated_at: "2026-03-10 08:35:00"
+                      total: 1
+                pelapor:
+                  summary: Response untuk pelapor (field terbatas)
+                  value:
+                    status: success
+                    message: Data barang temuan berhasil diambil.
+                    data:
+                      found_items:
+                        - id: 1
+                          nama_barang: Dompet Hitam
+                          waktu_temuan: "2026-03-10 08:30:00"
+                          status: tersimpan
+                      total: 1
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          description: Nilai parameter status tidak valid
+          content:
+            application/json:
+              example:
+                status: error
+                message: "Nilai status tidak valid. Pilihan: tersimpan, dicocokkan, diserahkan, selesai."
+                data: null
+
+  /api/found-items/selesai:
+    # ── GET /api/found-items/selesai ──────────────────────────────────────────
+    get:
+      tags: [Found Items]
+      summary: Ambil daftar barang temuan yang SUDAH SELESAI
+      description: |
+        Menampilkan hanya barang yang sudah selesai diproses atau sudah diarsipkan (`deleted_at` tidak NULL).
+        Format response sama dengan `/api/found-items`.
+      operationId: foundItemSelesai
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: lokasi
+          schema:
+            type: string
+          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Cari berdasarkan nama barang
+      responses:
+        "200":
+          description: Daftar barang selesai berhasil diambil.
+          content:
+            application/json:
+              example:
+                status: success
+                message: Data barang temuan yang sudah selesai berhasil diambil.
+                data:
+                  found_items: []
+                  total: 0
+
+  /api/found-items/ongoing:
+    # ── GET /api/found-items/ongoing ──────────────────────────────────────────
+    get:
+      tags: [Found Items]
+      summary: Ambil daftar barang temuan yang MASIH PROSES (Ongoing)
+      description: |
+        Menampilkan barang yang masih aktif dan belum diarsipkan (`deleted_at` adalah NULL).
+        Status yang termasuk: `tersimpan`, `dicocokkan`, `diserahkan`.
+      operationId: foundItemOngoing
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: lokasi
+          schema:
+            type: string
+          description: Cari berdasarkan nama lokasi — hanya untuk petugas
+        - in: query
+          name: search
+          schema:
+            type: string
+          description: Cari berdasarkan nama barang
+      responses:
+        "200":
+          description: Daftar barang ongoing berhasil diambil.
+          content:
+            application/json:
+              example:
+                status: success
+                message: Data barang temuan yang sedang diproses berhasil diambil.
+                data:
+                  found_items: []
+                  total: 0
+
+    # ── POST /api/found-items ─────────────────────────────────────────────────
+    post:
+      tags: [Found Items]
+      summary: Tambah barang temuan baru
+      description: |
+        Hanya **petugas** yang dapat mengakses endpoint ini.
+
+        Mendukung dua format request:
+        - `application/json` — tanpa foto
+        - `multipart/form-data` — dengan upload foto (field name: `foto`)
+
+        **Aturan upload foto:**
+        - Format: JPEG, PNG, WebP
+        - Ukuran maksimal: 5 MB
+      operationId: foundItemStore
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_barang, lokasi, waktu_temuan]
+              properties:
+                nama_barang:
+                  type: string
+                  maxLength: 150
+                  example: Dompet Hitam
+                deskripsi:
+                  type: string
+                  nullable: true
+                  example: Dompet kulit warna hitam berisi KTP
+                lokasi:
+                  type: string
+                  maxLength: 200
+                  example: Stasiun Manggarai, Peron 3
+                waktu_temuan:
+                  type: string
+                  description: Format wajib YYYY-MM-DD HH:MM:SS
+                  example: "2026-03-10 08:30:00"
+          multipart/form-data:
+            schema:
+              type: object
+              required: [nama_barang, lokasi, waktu_temuan]
+              properties:
+                nama_barang:
+                  type: string
+                  maxLength: 150
+                  example: Dompet Hitam
+                deskripsi:
+                  type: string
+                  nullable: true
+                  example: Dompet kulit warna hitam berisi KTP
+                lokasi:
+                  type: string
+                  maxLength: 200
+                  example: Stasiun Manggarai, Peron 3
+                waktu_temuan:
+                  type: string
+                  example: "2026-03-10 08:30:00"
+                foto:
+                  type: string
+                  format: binary
+                  description: File foto (JPEG/PNG/WebP, maks 5 MB)
+      responses:
+        "201":
+          description: Barang temuan berhasil ditambahkan
+          content:
+            application/json:
+              example:
+                status: success
+                message: Barang temuan berhasil ditambahkan.
+                data:
+                  found_item:
+                    id: 1
+                    petugas_id: 1
+                    petugas_name: Admin Petugas
+                    nama_barang: Dompet Hitam
+                    deskripsi: Dompet kulit warna hitam berisi KTP
+                    lokasi: Stasiun Manggarai, Peron 3
+                    waktu_temuan: "2026-03-10 08:30:00"
+                    foto_path: null
+                    status: tersimpan
+                    created_at: "2026-03-10 08:35:00"
+                    updated_at: "2026-03-10 08:35:00"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /api/found-items/{id}:
+    # ── GET /api/found-items/{id} ─────────────────────────────────────────────
+    get:
+      tags: [Found Items]
+      summary: Ambil detail satu barang temuan
+      description: |
+        **Response berbeda berdasarkan role:**
+        - `petugas` — data lengkap termasuk deskripsi, lokasi, foto, dan catatan
+        - `pelapor` — hanya `id`, `nama_barang`, `waktu_temuan`, `status`
+      operationId: foundItemShow
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID barang temuan
+          example: 1
+      responses:
+        "200":
+          description: Detail barang temuan berhasil diambil
+          content:
+            application/json:
+              examples:
+                petugas:
+                  summary: Response untuk petugas (full data)
+                  value:
+                    status: success
+                    message: Detail barang temuan berhasil diambil.
+                    data:
+                      found_item:
+                        id: 1
+                        petugas_id: 1
+                        petugas_name: Admin Petugas
+                        nama_barang: Dompet Hitam
+                        deskripsi: Dompet kulit warna hitam berisi KTP
+                        lokasi: Stasiun Manggarai, Peron 3
+                        waktu_temuan: "2026-03-10 08:30:00"
+                        foto_path: null
+                        catatan_selesai: null
+                        status: tersimpan
+                        created_at: "2026-03-10 08:35:00"
+                        updated_at: "2026-03-10 08:35:00"
+                pelapor:
+                  summary: Response untuk pelapor (field terbatas)
+                  value:
+                    status: success
+                    message: Detail barang temuan berhasil diambil.
+                    data:
+                      found_item:
+                        id: 1
+                        nama_barang: Dompet Hitam
+                        waktu_temuan: "2026-03-10 08:30:00"
+                        status: tersimpan
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          description: Barang temuan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Barang temuan tidak ditemukan.
+                data: null
+
+    # ── PUT /api/found-items/{id} ─────────────────────────────────────────────
+    put:
+      tags: [Found Items]
+      summary: Update data barang temuan
+      description: |
+        Hanya **petugas** yang dapat mengakses endpoint ini.
+
+        Mendukung dua format request:
+        - `application/json` — tanpa ganti foto
+        - `multipart/form-data` — dengan ganti foto baru
+
+        Jika foto baru dikirim, foto lama akan otomatis dihapus dari server.
+        Jika tidak dikirim foto baru, foto lama tetap dipertahankan.
+      operationId: foundItemUpdate
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_barang, lokasi, waktu_temuan, status]
+              properties:
+                nama_barang:
+                  type: string
+                  maxLength: 150
+                  example: Dompet Hitam Updated
+                deskripsi:
+                  type: string
+                  nullable: true
+                  example: Dompet kulit warna hitam berisi KTP dan kartu ATM
+                lokasi:
+                  type: string
+                  maxLength: 200
+                  example: Stasiun Manggarai, Peron 3
+                waktu_temuan:
+                  type: string
+                  description: Format wajib YYYY-MM-DD HH:MM:SS
+                  example: "2026-03-10 08:30:00"
+                status:
+                  type: string
+                  enum: [tersimpan, dicocokkan, diserahkan]
+                  description: Status selesai tidak dapat di-set manual — gunakan endpoint PATCH /archive
+                  example: tersimpan
+          multipart/form-data:
+            schema:
+              type: object
+              required: [nama_barang, lokasi, waktu_temuan, status]
+              properties:
+                nama_barang:
+                  type: string
+                  maxLength: 150
+                  example: Dompet Hitam Updated
+                deskripsi:
+                  type: string
+                  nullable: true
+                lokasi:
+                  type: string
+                  maxLength: 200
+                waktu_temuan:
+                  type: string
+                  example: "2026-03-10 08:30:00"
+                status:
+                  type: string
+                  enum: [tersimpan, dicocokkan, diserahkan]
+                foto:
+                  type: string
+                  format: binary
+                  description: Foto baru opsional (JPEG/PNG/WebP, maks 5 MB)
+      responses:
+        "200":
+          description: Barang temuan berhasil diperbarui
+          content:
+            application/json:
+              example:
+                status: success
+                message: Barang temuan berhasil diperbarui.
+                data:
+                    found_item:
+                    id: 1
+                    petugas_id: 1
+                    petugas_name: Admin Petugas
+                    nama_barang: Dompet Hitam Updated
+                    deskripsi: Dompet kulit warna hitam berisi KTP dan kartu ATM
+                    lokasi: Stasiun Manggarai, Peron 3
+                    waktu_temuan: "2026-03-10 08:30:00"
+                    foto_path: null
+                    catatan_selesai: null
+                    status: tersimpan
+                    created_at: "2026-03-10 08:35:00"
+                    updated_at: "2026-03-10 09:00:00"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          description: Barang temuan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Barang temuan tidak ditemukan.
+                data: null
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+    # ── PATCH /api/found-items/{id}/archive ───────────────────────────────────
+  /api/found-items/{id}/archive:
+    patch:
+      tags: [Found Items]
+      summary: Arsipkan barang temuan (selesaikan kasus)
+      description: |
+        Hanya **petugas** yang dapat mengakses endpoint ini.
+
+        Menggantikan fungsi DELETE. Barang **tidak dihapus** dari database melainkan:
+        - `status` diubah menjadi `selesai`
+        - `deleted_at` dicatat (soft delete)
+        - `catatan_selesai` dapat diisi sebagai keterangan
+
+        **Akan ditolak (409) jika:**
+        - Barang sudah berstatus `selesai` sebelumnya
+        - Barang sedang dalam pencocokan aktif (status pencocokan: `pending` / `diverifikasi`)
+
+        Setelah diarsipkan, barang tidak akan muncul lagi di daftar.
+      operationId: foundItemArchive
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          example: 1
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                catatan_selesai:
+                  type: string
+                  nullable: true
+                  description: Keterangan opsional mengapa barang diselesaikan
+                  example: "Barang telah dikembalikan ke pemilik pada 10 Maret 2026"
+      responses:
+        "200":
+          description: Barang temuan berhasil diarsipkan
+          content:
+            application/json:
+              example:
+                status: success
+                message: Barang temuan berhasil diselesaikan dan diarsipkan.
+                data:
+                  id: 1
+                  status: selesai
+                  catatan_selesai: "Barang telah dikembalikan ke pemilik pada 10 Maret 2026"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "403":
+          $ref: '#/components/responses/Forbidden'
+        "404":
+          description: Barang temuan tidak ditemukan
+          content:
+            application/json:
+              example:
+                status: error
+                message: Barang temuan tidak ditemukan.
+                data: null
+        "409":
+          description: Barang sudah selesai atau sedang dalam pencocokan aktif
+          content:
+            application/json:
+              examples:
+                sudah_selesai:
+                  summary: Sudah diarsipkan sebelumnya
+                  value:
+                    status: error
+                    message: Barang temuan ini sudah berstatus selesai.
+                    data: null
+                pencocokan_aktif:
+                  summary: Sedang dalam pencocokan aktif
+                  value:
+                    status: error
+                    message: Barang temuan tidak dapat diselesaikan karena sedang dalam proses pencocokan aktif.
+                    data: null
 
