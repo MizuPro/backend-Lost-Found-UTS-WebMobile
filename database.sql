@@ -41,7 +41,8 @@ CREATE TABLE IF NOT EXISTS `barang_temuan` (
     PRIMARY KEY (`id`),
     CONSTRAINT `fk_bt_petugas` FOREIGN KEY (`petugas_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
     INDEX `idx_bt_status`  (`status`),
-    INDEX `idx_bt_lokasi`  (`lokasi`)
+    INDEX `idx_bt_lokasi`  (`lokasi`),
+    INDEX `idx_bt_deleted_at` (`deleted_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ── Tabel: laporan_kehilangan ─────────────────────────────────

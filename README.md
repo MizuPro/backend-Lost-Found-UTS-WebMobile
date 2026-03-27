@@ -40,7 +40,7 @@ backend-Lost-Found/
 ├── routes/             # Definisi Endpoint API
 ├── storage/            # Tempat penyimpanan upload foto
 ├── database.sql        # Skema Database
-├── API_Documentation.md # Dokumentasi OpenAPI 3.0
+├── API_DOCUMENTATION_versi2.md # Dokumentasi OpenAPI 3.0
 └── index.php           # Entry Point & Router
 ```
 
@@ -84,7 +84,7 @@ backend-Lost-Found/
 ## 📖 Dokumentasi API
 
 Dokumentasi lengkap mengenai endpoint, parameter, dan contoh response dapat dilihat pada file:
-👉 **[API_Documentation.md](./API_Documentation.md)**
+👉 **[API_DOCUMENTATION_versi2.md](./API_DOCUMENTATION_versi2.md)**
 
 ### Endpoint Populer:
 - `POST /api/auth/login` - Login pengguna
