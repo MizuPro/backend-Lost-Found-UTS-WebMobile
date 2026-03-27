@@ -75,7 +75,7 @@ class FoundItemModel
                     bt.status, bt.created_at, bt.updated_at
              FROM barang_temuan bt
              JOIN users u ON bt.petugas_id = u.id
-             WHERE bt.id = ? AND bt.deleted_at IS NULL
+             WHERE bt.id = ?
              LIMIT 1'
         );
         $stmt->execute([$id]);
@@ -127,7 +127,7 @@ class FoundItemModel
         $stmt = $this->db->prepare(
             'SELECT bt.id, bt.nama_barang, bt.waktu_temuan, bt.status
              FROM barang_temuan bt
-             WHERE bt.id = ? AND bt.deleted_at IS NULL
+             WHERE bt.id = ?
              LIMIT 1'
         );
         $stmt->execute([$id]);

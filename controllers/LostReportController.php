@@ -229,12 +229,23 @@ class LostReportController
             );
         }
 
-        $this->model->delete($id);
+        try {
+            $this->model->delete($id);
 
-        ResponseHelper::success(
-            ['id' => $id],
-            'Laporan kehilangan berhasil dihapus.'
-        );
+            ResponseHelper::success(
+                ['id' => $id],
+                'Laporan kehilangan berhasil dihapus.'
+            );
+        } catch (\PDOException $e) {
+            // Cek constraint violation (23000)
+            if ($e->getCode() === '23000') {
+                ResponseHelper::error(
+                    'Laporan tidak dapat dihapus karena sudah memiliki riwayat pencocokan (aktif maupun tidak aktif).',
+                    409
+                );
+            }
+            ResponseHelper::error('Terjadi kesalahan saat menghapus laporan: ' . $e->getMessage(), 500);
+        }
     }
 }
 
