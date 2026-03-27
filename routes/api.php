@@ -44,7 +44,15 @@ return [
     'GET /api/matches/{id}'           => ['MatchController', 'show',          ['auth', 'role:petugas,pelapor']],
     'POST /api/matches'               => ['MatchController', 'matchItem',     ['auth', 'role:petugas']],
     'PUT /api/matches/{id}/verify'    => ['MatchController', 'verifyClaim',   ['auth', 'role:petugas']],
-    'PUT /api/matches/{id}/handover'  => ['MatchController', 'recordHandover', ['auth', 'role:petugas']],
     'PUT /api/matches/{id}/cancel'    => ['MatchController', 'cancelMatch',    ['auth', 'role:petugas']],
+
+    // ── PENJADWALAN PENGAMBILAN (Pickup Schedules) ─────────────────────────
+    'GET /api/pickup-schedules'               => ['PickupScheduleController', 'index',      ['auth', 'role:petugas,pelapor']],
+    'GET /api/pickup-schedules/{id}'          => ['PickupScheduleController', 'show',       ['auth', 'role:petugas,pelapor']],
+    'POST /api/pickup-schedules'              => ['PickupScheduleController', 'create',     ['auth', 'role:petugas,pelapor']],
+    'PUT /api/pickup-schedules/{id}/review'   => ['PickupScheduleController', 'review',     ['auth', 'role:petugas']],
+    'PUT /api/pickup-schedules/{id}/reschedule' => ['PickupScheduleController', 'reschedule', ['auth', 'role:petugas']],
+    'PUT /api/pickup-schedules/{id}/cancel'   => ['PickupScheduleController', 'cancel',     ['auth', 'role:petugas,pelapor']],
+    'PUT /api/pickup-schedules/{id}/complete' => ['PickupScheduleController', 'complete',   ['auth', 'role:petugas']],
 
 ];

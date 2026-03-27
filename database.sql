@@ -79,6 +79,28 @@ CREATE TABLE IF NOT EXISTS `pencocokan` (
     INDEX `idx_p_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── Tabel: jadwal_pengambilan ─────────────────────────────────
+CREATE TABLE IF NOT EXISTS `jadwal_pengambilan` (
+    `id`                 INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `match_id`           INT UNSIGNED NOT NULL,
+    `pelapor_id`         INT UNSIGNED NOT NULL,
+    `petugas_id`         INT UNSIGNED DEFAULT NULL,
+    `waktu_jadwal`       DATETIME NOT NULL,
+    `lokasi_pengambilan` VARCHAR(200) NOT NULL,
+    `catatan`            TEXT,
+    `status`             ENUM('menunggu_persetujuan','disetujui','ditolak','dibatalkan','selesai') NOT NULL DEFAULT 'menunggu_persetujuan',
+    `completed_at`       DATETIME DEFAULT NULL,
+    `created_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`         DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    CONSTRAINT `fk_jp_match` FOREIGN KEY (`match_id`) REFERENCES `pencocokan`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_jp_pelapor` FOREIGN KEY (`pelapor_id`) REFERENCES `users`(`id`) ON DELETE RESTRICT,
+    CONSTRAINT `fk_jp_petugas` FOREIGN KEY (`petugas_id`) REFERENCES `users`(`id`) ON DELETE SET NULL,
+    INDEX `idx_jp_match` (`match_id`),
+    INDEX `idx_jp_pelapor` (`pelapor_id`),
+    INDEX `idx_jp_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── Data Seed: akun petugas default ──────────────────────────
 -- Password: petugas123 (sudah di-hash bcrypt)
 INSERT INTO `users` (`name`, `email`, `password`, `role`) VALUES

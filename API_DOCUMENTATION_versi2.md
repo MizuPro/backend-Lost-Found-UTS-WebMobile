@@ -176,14 +176,86 @@ Selamat datang di Dokumentasi API untuk sistem *Lost & Found CommuterLink Nusant
 - **Deskripsi:** Petugas memverifikasi kecocokan barang (misal: "Oh iya difoto benar KTP si bapak itu"). Status disuntik jadi `diverifikasi`.
 - **Parameter yang dikirim (Opsional):** `catatan`
 
-### 🔒 Serah Terima Fisik Barang
+### ⚠️ Endpoint Lama Serah Terima (Deprecated)
 - **Method:** `PUT`
 - **Endpoint:** `/api/matches/{id}/handover`
-- **Deskripsi:** Penumpang telah mengambil paket barangnya di pos sekuriti stasiun. Proses finish 100%. Status pencocokan langsung `selesai`.
-- **Parameter yang dikirim (Opsional):** `catatan`
+- **Deskripsi:** Endpoint ini **sudah tidak dipakai** dan akan mengembalikan status `410 Gone`.
+- **Migrasi:** Gunakan endpoint baru `PUT /api/pickup-schedules/{id}/complete`.
 
 ### 🔒 Batal & Putuskan Hubungannya
 - **Method:** `PUT`
 - **Endpoint:** `/api/matches/{id}/cancel`
 - **Deskripsi:** Barang dan Laporan digagalkan pencocokannya. Barang dilempar lagi ke status pencarian aktif awal seperti sedia kala.
 - **Parameter yang dikirim (Opsional):** `catatan`
+
+---
+
+## 📅 5. Penjadwalan Pengambilan (Pickup Schedules)
+*Modul ini terikat ke `match_id`. Alurnya: pelapor ajukan jadwal, petugas review, lalu petugas menyelesaikan serah-terima lewat endpoint complete.*
+
+### Status Jadwal yang Digunakan
+- `menunggu_persetujuan` → pengajuan baru dari pelapor
+- `disetujui` → disetujui petugas
+- `ditolak` → ditolak petugas
+- `dibatalkan` → dibatalkan pelapor (hanya saat masih menunggu)
+- `selesai` → serah terima sudah dicatat selesai oleh petugas
+
+### 🔒 Daftar Jadwal Pengambilan
+- **Method:** `GET`
+- **Endpoint:** `/api/pickup-schedules`
+- **Akses:** Petugas & Pelapor
+- **Deskripsi:**
+  - *Petugas:* Melihat semua jadwal.
+  - *Pelapor:* Hanya melihat jadwal miliknya.
+- **Filter Opsional:** `?status=...` dan `?match_id=...`
+
+### 🔒 Detail Jadwal Pengambilan
+- **Method:** `GET`
+- **Endpoint:** `/api/pickup-schedules/{id}`
+- **Akses:** Petugas & Pelapor
+- **Deskripsi:** Menampilkan detail satu jadwal. Pelapor hanya boleh mengakses jadwal miliknya.
+
+### 🔒 Ajukan Jadwal Pengambilan *(Pelapor)*
+- **Method:** `POST`
+- **Endpoint:** `/api/pickup-schedules`
+- **Deskripsi:** Pelapor mengajukan jadwal untuk `match` yang sudah `diverifikasi`.
+- **Parameter yang dikirim:**
+  - `match_id` (Wajib)
+  - `waktu_jadwal` (Wajib, format `YYYY-MM-DD HH:MM:SS`)
+  - `lokasi_pengambilan` (Wajib)
+  - `catatan` (Opsional)
+- **Catatan aturan:** Satu `match_id` hanya boleh punya satu jadwal aktif (`menunggu_persetujuan` atau `disetujui`).
+
+### 🔒 Review Pengajuan Jadwal *(Petugas)*
+- **Method:** `PUT`
+- **Endpoint:** `/api/pickup-schedules/{id}/review`
+- **Deskripsi:** Petugas menyetujui atau menolak pengajuan jadwal.
+- **Parameter yang dikirim:**
+  - `action` (Wajib, isi: `disetujui` atau `ditolak`)
+  - `catatan` (Opsional)
+
+### 🔒 Ubah Jadwal Aktif *(Petugas)*
+- **Method:** `PUT`
+- **Endpoint:** `/api/pickup-schedules/{id}/reschedule`
+- **Deskripsi:** Petugas mengubah waktu/lokasi untuk jadwal aktif.
+- **Parameter yang dikirim:**
+  - `waktu_jadwal` (Wajib, format `YYYY-MM-DD HH:MM:SS`)
+  - `lokasi_pengambilan` (Wajib)
+  - `catatan` (Opsional)
+
+### 🔒 Batalkan Pengajuan Jadwal *(Pelapor)*
+- **Method:** `PUT`
+- **Endpoint:** `/api/pickup-schedules/{id}/cancel`
+- **Deskripsi:** Pelapor membatalkan pengajuan **hanya jika status masih** `menunggu_persetujuan`.
+- **Parameter yang dikirim (Opsional):** `catatan`
+
+### 🔒 Selesaikan Pengambilan / Serah Terima *(Petugas)*
+- **Method:** `PUT`
+- **Endpoint:** `/api/pickup-schedules/{id}/complete`
+- **Deskripsi:** Endpoint finalisasi baru pengambilan barang. Saat sukses:
+  - status jadwal menjadi `selesai`
+  - status pencocokan (`match`) menjadi `selesai`
+  - barang temuan diarsipkan (`selesai`)
+  - laporan kehilangan ditandai `selesai`
+- **Parameter yang dikirim (Opsional):** `catatan`
+

@@ -191,46 +191,10 @@ class MatchController
     // ── PUT /api/matches/{id}/handover ───────────────────────────────────────
     public function recordHandover(): void
     {
-        $id = (int) ($GLOBALS['route_params']['id'] ?? 0);
-        $match = $this->matchModel->findById($id);
-
-        if (!$match) {
-            ResponseHelper::notFound('Data pencocokan tidak ditemukan.');
-        }
-
-        if ($match['status'] !== 'diverifikasi') {
-            ResponseHelper::error('Hanya pencocokan berstatus diverifikasi yang dapat diserahkan.', 409);
-        }
-
-        $input = ValidationHelper::sanitizeAll(ValidationHelper::getInput());
-        $catatan = isset($input['catatan']) ? trim($input['catatan']) : null;
-        $waktuSerah = date('Y-m-d H:i:s');
-
-        try {
-            $db = Database::getInstance();
-            $db->beginTransaction();
-
-            $this->matchModel->updateStatus($id, 'selesai', $catatan, $waktuSerah);
-
-            // Update status barang temuan -> selesai sesuai permintaan
-            $this->foundItemModel->archive($match['barang_temuan_id'], $catatan);
-
-            // Update status laporan kehilangan -> selesai
-            $laporan = $this->lostReportModel->findById($match['laporan_id']);
-            $this->lostReportModel->update($match['laporan_id'], array_merge($laporan, ['status' => 'selesai']));
-
-            $db->commit();
-
-            $updatedMatch = $this->matchModel->findById($id);
-            ResponseHelper::success(
-                ['match' => $updatedMatch],
-                'Barang berhasil diserahkan kepada pelapor. Pencocokan selesai.'
-            );
-
-        } catch (\Exception $e) {
-            $db->rollBack();
-            ResponseHelper::error('Terjadi kesalahan saat mencatat penyerahan: ' . $e->getMessage(), 500);
-        }
+        ResponseHelper::error(
+            'Endpoint ini sudah tidak digunakan. Gunakan PUT /api/pickup-schedules/{id}/complete.',
+            410
+        );
     }
 
     // ── PUT /api/matches/{id}/cancel ─────────────────────────────────────────
