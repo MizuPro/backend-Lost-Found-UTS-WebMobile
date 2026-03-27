@@ -289,3 +289,43 @@ Selamat datang di Dokumentasi API untuk sistem *Lost & Found CommuterLink Nusant
 - **Endpoint:** `/api/chat-rooms/{id}/end`
 - **Akses:** Petugas
 - **Deskripsi:** Petugas secara manual mengakhiri obrolan. Setelah dieksekusi, statusnya di Database menjadi `selesai` dan tidak bisa di chat lagi.
+
+---
+
+### *Panduan Khusus Frontend: Implementasi Realtime Chat dengan Firebase*
+Berikut adalah panduan bagi tim Frontend (Web/Mobile) untuk mengintegrasikan Chat Room ini ke sistem UI menggunakan Firebase Realtime Database.
+
+**A. Akses Konfigurasi Firebase Project**
+Gunakan kredensial berikut untuk melakukan inisialisasi awal Firebase SDK di aplikasi frontend Anda (via modul `initializeApp`):
+```javascript
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyDXjBuF3q4Ibihi_6dWdbUzZZejKjAsKTI",
+    authDomain: "ujian-project---pemwebmob.firebaseapp.com",
+    databaseURL: "https://ujian-project---pemwebmob-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "ujian-project---pemwebmob",
+    storageBucket: "ujian-project---pemwebmob.firebasestorage.app",
+    messagingSenderId: "542420998647",
+    appId: "1:542420998647:web:fc894fd939e1e21b3cb6f2"
+};
+```
+
+**B. Alur Autentikasi Chat (Custom Token)**
+1. Setelah pengguna Anda Login standar melalui API (`/api/auth/login`) dan mendapatkan Bearer Token JWT, panggil endpoint `GET /api/chat/firebase-token`.
+2. Extrak value `firebase_token` dari respons server.
+3. Login ke SDK Firebase menggunakan token tersebut via fungsi `signInWithCustomToken(auth, firebase_token)`.
+
+**C. Skema Penyimpanan Pesan di Database Firebase**
+Setiap Room dipisahkan berdasarkan `firebase_room_id` yang Anda dapatkan dari list chat. 
+Path/Reference (Ref) untuk mendengarkan pesan adalah: `chats/{firebase_room_id}`
+
+Format data (JSON) setiap pesan yang **harus** dipush (`push()`) ke Firebase oleh Frontend saat pengguna mengirim pesan:
+```json
+{
+  "sender_id": "3",
+  "sender_name": "Admin Petugas",
+  "sender_username": "petugas",
+  "text": "Teks pesan yang dikirim...",
+  "timestamp": 1711582200000 
+}
+```
+> *Catatan: Waktu (`timestamp`) di frontend disarankan memakai tipe Unix Epoch-milisecond (contoh `Date.now()`). Info `sender_name` & `sender_username` bisa diambil oleh frontend dengan men-decode payload JWT (Token asli dari login atau dari return data).*

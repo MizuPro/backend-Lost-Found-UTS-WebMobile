@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Firebase Chat</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; max-width: 800px; }
+        .card { border: 1px solid #ccc; padding: 15px; margin-bottom: 20px; border-radius: 5px; }
+        input, button { padding: 8px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+        button { background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #chat-box { border: 1px solid #ddd; height: 300px; overflow-y: scroll; padding: 10px; background: #f9f9f9; }
+        .message { margin-bottom: 10px; padding: 8px; border-radius: 4px; background: #e3f2fd; position: relative; }
+        .message span { font-weight: bold; font-size: 0.9em; color: #555; }
+        .message .time { font-size: 0.7em; color: #888; position: absolute; right: 10px; top: 10px; }
+    </style>
+</head>
+<body>
+
+    <h2>Testing Firebase Chat Backend</h2>
+
+    <div class="card">
+        <h3>1. Dapatkan Firebase Token & Login</h3>
+        <p><i>Konfigurasi Firebase sudah ditanam (hardcoded) di source code file ini agar Anda tidak perlu input terus.</i></p>
+        <input type="text" id="bearer-token" placeholder="Masukkan JWT Token Backend dari Postman (Bearer ...)">
+        <button id="btn-connect">Dapatkan Token & Hubungkan ke Firebase</button>
+        <p id="auth-status" style="color: red;">Status: Belum Terhubung</p>
+    </div>
+
+    <div class="card" id="chat-section" style="opacity: 0.5; pointer-events: none;">
+        <h3>3. Masuk Ke Room & Chat</h3>
+        <input type="text" id="room-id" placeholder="Masukkan firebase_room_id (misal: room_65f1a2b3c4d5e)">
+        <button id="btn-join-room">Join Room</button>
+
+        <div id="chat-box"></div>
+
+        <input type="text" id="message-input" placeholder="Ketik pesan Anda...">
+        <button id="btn-send">Kirim Pesan</button>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getAuth, signInWithCustomToken, updateProfile } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { getDatabase, ref, onValue, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        let db;
+        let auth;
+        let currentRoomRef;
+        let myUid = "Unknown";
+        let myName = "User Unknown";
+        let myUsername = "user";
+
+        const btnConnect = document.getElementById("btn-connect");
+        const btnJoin = document.getElementById("btn-join-room");
+        const btnSend = document.getElementById("btn-send");
+        const chatBox = document.getElementById("chat-box");
+        const statusText = document.getElementById("auth-status");
+        const chatSection = document.getElementById("chat-section");
+
+        // -------------------------------------------------------------
+        // TODO: ISI DENGAN KONFIGURASI FIREBASE ANDA DI BAWAH INI
+        // (Tim Frontend Anda juga akan melakukan hal yang sama di kodenya)
+        // -------------------------------------------------------------
+        const FIREBASE_CONFIG = {
+            apiKey: "AIzaSyDXjBuF3q4Ibihi_6dWdbUzZZejKjAsKTI",
+            authDomain: "ujian-project---pemwebmob.firebaseapp.com",
+            databaseURL: "https://ujian-project---pemwebmob-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "ujian-project---pemwebmob",
+            storageBucket: "ujian-project---pemwebmob.firebasestorage.app",
+            messagingSenderId: "542420998647",
+            appId: "1:542420998647:web:fc894fd939e1e21b3cb6f2"
+        };
+
+        btnConnect.addEventListener("click", async () => {
+            const bearerToken = document.getElementById('bearer-token').value;
+
+            if(!bearerToken) {
+                alert("Harap masukkan Bearer Token POSTMAN!");
+                return;
+            }
+
+            statusText.textContent = "Status: Mengambil Firebase Token dari Backend...";
+            statusText.style.color = "orange";
+
+            // Pastikan URL diakses via localhost/domain, tidak lewat file:///
+            if (window.location.protocol === 'file:') {
+                alert("Harap buka file ini melalui server web (http://localhost/...) BUKAN di-double click (file://) !");
+                return;
+            }
+
+            try {
+                // Panggil backend PHP getFirebaseToken
+                // Gunakan path dinamis tapi pastikan tidak menyebabkan isu jika server membuang nama subfolder
+                const basePath = window.location.pathname.replace('/test-chat.html', '');
+                // Fallback untuk menjamin URL benar bila basePath terhitung kosong
+                const computedBasePath = basePath.length > 0 ? basePath : '/backend-Lost-Found';
+                const url = window.location.origin + computedBasePath + '/api/chat/firebase-token';
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${bearerToken}`
+                    }
+                });
+
+                // Tampilkan isi sebenarnya jika ada error HTML/PHP Fatal error
+                const responseText = await response.text();
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    console.error("Server Response (Bukan JSON):", responseText);
+                    document.getElementById("chat-box").innerHTML = "<div style='color:red; font-size:12px; font-family:monospace;'>" + responseText + "</div>";
+                    throw new Error("PHP Error (Lihat Inspect Element / Console atau kotak di bawah untuk detail): " + responseText.substring(0, 100));
+                }
+
+                if(result.status === 'error' || !response.ok) {
+                    throw new Error(result.message || "Gagal mendapatkan token dari backend");
+                }
+
+                // Ambil token dari respons yang dikemas dalam "data"
+                const firebaseCustomToken = result.data ? result.data.firebase_token : result.firebase_token;
+                statusText.textContent = `Status: Token didapat, menghubungkan le Firebase...`;
+
+                // Inisialisasi Firebase menggunakan config yang ditanam
+                const app = initializeApp(FIREBASE_CONFIG);
+                auth = getAuth(app);
+                db = getDatabase(app);
+
+                // Login pakai Custom Token
+                const userCredential = await signInWithCustomToken(auth, firebaseCustomToken);
+                myUid = userCredential.user.uid;
+
+                // Ambil info nama dari JWT claim jika Anda melakukan decoding JWT
+                // Atau cara termudah untuk tester adalah simpan nama ke Firebase user profile setelah login (Optional)
+                try {
+                    // Extract payload dari JWT token
+                    const base64Url = firebaseCustomToken.split('.')[1];
+                    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                    }).join(''));
+                    const parsedData = JSON.parse(jsonPayload);
+
+                    if(parsedData.claims && parsedData.claims.name) {
+                        myName = parsedData.claims.name;
+                    } else {
+                        myName = "User " + myUid;
+                    }
+
+                    if(parsedData.claims && parsedData.claims.username) {
+                        myUsername = parsedData.claims.username;
+                    }
+
+                    // Opsional: perbarui displayName di firebase auth (supaya permanen tersimpan disana)
+                    await updateProfile(userCredential.user, { displayName: myName });
+                } catch(e) {
+                    myName = "User " + myUid;
+                    myUsername = "user" + myUid;
+                }
+
+                statusText.textContent = `Status: BERHASIL TERHUBUNG SEBAGAI UID: ${myUid} [${myName} (${myUsername})]`;
+                statusText.style.color = "green";
+
+                // Buka akses chat
+                chatSection.style.opacity = "1";
+                chatSection.style.pointerEvents = "auto";
+
+            } catch (error) {
+                console.error(error);
+                statusText.textContent = `Status Error: ${error.message}`;
+                statusText.style.color = "red";
+            }
+        });
+
+        btnJoin.addEventListener("click", () => {
+            const roomId = document.getElementById("room-id").value;
+            if(!roomId) return alert("Masukkan Room ID!");
+
+            chatBox.innerHTML = "<p><i>Bergabung ke " + roomId + "...</i></p>";
+            currentRoomRef = ref(db, `chats/${roomId}`);
+
+            // Listen Firebase secara Live
+            onValue(currentRoomRef, (snapshot) => {
+                chatBox.innerHTML = "";
+                const data = snapshot.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        const msg = data[key];
+                        const div = document.createElement("div");
+                        div.className = "message";
+
+                        // Gunakan format Name (username) jika data tersedia
+                        let displayName = `User ${msg.sender_id}`;
+                        if (msg.sender_name && msg.sender_username) {
+                            displayName = `${msg.sender_name} (${msg.sender_username})`;
+                        } else if (msg.sender_name) {
+                            displayName = `${msg.sender_name}`;
+                        }
+
+                        // Format waktu
+                        let timeString = "";
+                        if (msg.timestamp) {
+                            const date = new Date(msg.timestamp);
+                            const options = { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+                            timeString = date.toLocaleDateString('id-ID', options);
+                        }
+
+                        div.innerHTML = `<span>${displayName}:</span> <div class="time">${timeString}</div><br>${msg.text}`;
+                        chatBox.appendChild(div);
+                    });
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                } else {
+                    chatBox.innerHTML = "<p><i>Belum ada pesan di room ini.</i></p>";
+                }
+            });
+        });
+
+        btnSend.addEventListener("click", () => {
+            const text = document.getElementById("message-input").value;
+            if(!text || !currentRoomRef) return;
+
+            push(currentRoomRef, {
+                sender_id: myUid,
+                sender_name: myName,
+                sender_username: myUsername,
+                text: text,
+                timestamp: Date.now()
+            });
+
+            document.getElementById("message-input").value = "";
+        });
+    </script>
+</body>
+</html>

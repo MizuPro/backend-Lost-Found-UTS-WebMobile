@@ -1,0 +1,18 @@
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDXjBuF3q4Ibihi_6dWdbUzZZejKjAsKTI",
+  authDomain: "ujian-project---pemwebmob.firebaseapp.com",
+  databaseURL: "https://ujian-project---pemwebmob-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "ujian-project---pemwebmob",
+  storageBucket: "ujian-project---pemwebmob.firebasestorage.app",
+  messagingSenderId: "542420998647",
+  appId: "1:542420998647:web:fc894fd939e1e21b3cb6f2"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
