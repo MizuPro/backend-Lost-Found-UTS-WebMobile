@@ -14,7 +14,6 @@
  */
 
 return [
-
     // ── AUTH ─────────────────────────────────────────────────────────────────
     'POST /api/auth/register'         => ['AuthController',  'register',        []],
     'POST /api/auth/login'            => ['AuthController',  'login',           []],
@@ -22,6 +21,12 @@ return [
     'GET /api/auth/me'                => ['AuthController',  'me',              ['auth']],
     'PUT /api/auth/profile'           => ['AuthController',  'updateProfile',   ['auth']],
     'PUT /api/auth/change-password'   => ['AuthController',  'changePassword',  ['auth']],
+
+    // ── CHAT ROOMS (Firebase Chat Backend) ───────────────────────────────────
+    'POST /api/chat-rooms'            => ['ChatRoomController', 'store',        ['auth', 'role:petugas']],
+    'GET /api/chat-rooms'             => ['ChatRoomController', 'index',        ['auth', 'role:petugas,pelapor']],
+    'PUT /api/chat-rooms/{id}/end'    => ['ChatRoomController', 'endRoom',      ['auth', 'role:petugas']],
+    'GET /api/chat/firebase-token'    => ['ChatRoomController', 'getFirebaseToken',['auth', 'role:petugas,pelapor']],
 
     // ── BARANG TEMUAN (Found Items) ───────────────────────────────────────────
     'GET /api/found-items'                    => ['FoundItemController', 'index',   ['auth', 'role:petugas,pelapor']],
@@ -54,5 +59,4 @@ return [
     'PUT /api/pickup-schedules/{id}/reschedule' => ['PickupScheduleController', 'reschedule', ['auth', 'role:petugas']],
     'PUT /api/pickup-schedules/{id}/cancel'   => ['PickupScheduleController', 'cancel',     ['auth', 'role:petugas,pelapor']],
     'PUT /api/pickup-schedules/{id}/complete' => ['PickupScheduleController', 'complete',   ['auth', 'role:petugas']],
-
 ];

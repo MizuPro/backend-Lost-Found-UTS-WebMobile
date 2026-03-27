@@ -101,10 +101,24 @@ CREATE TABLE IF NOT EXISTS `jadwal_pengambilan` (
     INDEX `idx_jp_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- ── Tabel: chat_rooms ─────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS `chat_rooms` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `firebase_room_id` VARCHAR(50) NOT NULL UNIQUE,
+    `petugas_id` INT NOT NULL,
+    `pelapor_id` INT NOT NULL,
+    `laporan_id` INT NOT NULL,
+    `status` ENUM('aktif', 'selesai') DEFAULT 'aktif',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (`petugas_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`pelapor_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`laporan_id`) REFERENCES `laporan_kehilangan`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- ── Data Seed: akun petugas default ──────────────────────────
 -- Password: petugas123 (sudah di-hash bcrypt)
 INSERT INTO `users` (`name`, `email`, `password`, `role`) VALUES
 ('Admin Petugas',   'petugas@commuterlink.id',  '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'petugas'),
 ('Budi Santoso',    'budi@gmail.com',            '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'pelapor');
 -- Kedua akun seed memakai password: "password"
-

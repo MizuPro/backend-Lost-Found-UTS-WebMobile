@@ -259,3 +259,33 @@ Selamat datang di Dokumentasi API untuk sistem *Lost & Found CommuterLink Nusant
   - laporan kehilangan ditandai `selesai`
 - **Parameter yang dikirim (Opsional):** `catatan`
 
+---
+
+## 💬 6. Integrasi Chat Firebase (Manual)
+*Modul komunikasi antara Petugas dan Pelapor terkait laporan kehilangan. Chat sepenuhnya berbasis Firebase, dan backend hanya berfungsi sebagai pembuat Room ID.*
+
+### 🔒 Dapatkan Firebase Custom Token
+- **Method:** `GET`
+- **Endpoint:** `/api/chat/firebase-token`
+- **Akses:** Petugas & Pelapor
+- **Deskripsi:** Backend memberikan token untuk digunakan frontend login ke sistem Firebase (via `signInWithCustomToken`).
+
+### 🔒 Daftar Chat Room
+- **Method:** `GET`
+- **Endpoint:** `/api/chat-rooms`
+- **Akses:** Petugas & Pelapor
+- **Deskripsi:** Menghasilkan list room chat yang Anda ikuti.
+
+### 🔒 Mulai Chat Baru *(Hanya Petugas)*
+- **Method:** `POST`
+- **Endpoint:** `/api/chat-rooms`
+- **Akses:** Petugas
+- **Deskripsi:** Petugas memicu pembuatan room baru berdasarkan Laporan Kehilangan milik pelapor. 
+- **Parameter yang dikirim:**
+  - `laporan_id` (Wajib, ID Laporan Kehilangan)
+
+### 🔒 Selesaikan / Akhiri Sesi Chat *(Hanya Petugas)*
+- **Method:** `PUT`
+- **Endpoint:** `/api/chat-rooms/{id}/end`
+- **Akses:** Petugas
+- **Deskripsi:** Petugas secara manual mengakhiri obrolan. Setelah dieksekusi, statusnya di Database menjadi `selesai` dan tidak bisa di chat lagi.
